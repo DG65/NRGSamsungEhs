@@ -1,0 +1,124 @@
+{
+    "elements": [
+        {
+            "type": "ExpansionPanel",
+            "caption": "📖 Dokumentation & Hilfe",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "Label",
+                    "name": "VersionInfo",
+                    "caption": "ℹ️ SamsungEhs Version -- lokale NASA-Protokoll-Anbindung für Samsung-EHS-Wärmepumpen."
+                },
+                {
+                    "type": "Label",
+                    "caption": "Hört auf den internen Samsung-NASA-Bus (RS485, F1/F2-Anschluss) mit und liest die dort ohnehin laufenden Statuswerte aus -- ohne Internet, ohne Konto, ohne Samsungs offizielles Modbus-Zubehörmodul MIM-B19N. Details: https://github.com/DG65/NRGSamsungEhs"
+                },
+                {
+                    "type": "Label",
+                    "caption": "Ablauf: 1. RS485-zu-Ethernet-Adapter am F1/F2-Anschluss der Wärmepumpe anschließen (siehe Hilfe unten) → 2. dessen IP-Adresse und Port eintragen → 3. Übernehmen → 4. „SamsungEhs aktiv“ einschalten und erneut übernehmen."
+                },
+                {
+                    "type": "Button",
+                    "caption": "🔄 Übernehmen erzwingen (ohne Formularänderung)",
+                    "confirm": "Wirklich ApplyChanges() erzwingen? Praktisch direkt nach einem Modul-Update über die Modulverwaltung.",
+                    "onClick": "IPS_ApplyChanges($id); echo '✅ ApplyChanges() ausgeführt.';"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "name": "GeneralPanel",
+            "caption": "🔧 Allgemein",
+            "expanded": true,
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "SAMEHS_Active",
+                    "caption": "SamsungEhs aktiv"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "SAMEHS_Interval",
+                    "caption": "Aktualisierungsintervall (Sekunden)",
+                    "minimum": 30,
+                    "maximum": 600,
+                    "suffix": " s"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "name": "ConnectionPanel",
+            "caption": "🔌 NASA-Bus-Zugang (RS485-Adapter)",
+            "expanded": true,
+            "items": [
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "ValidationTextBox",
+                            "name": "Host",
+                            "caption": "IP-Adresse des RS485-Adapters"
+                        },
+                        {
+                            "type": "PopupButton",
+                            "caption": "Welchen Adapter brauche ich und wie schließe ich ihn an?",
+                            "width": "460px",
+                            "popup": {
+                                "caption": "Welchen Adapter brauche ich und wie schließe ich ihn an?",
+                                "items": [
+                                    {
+                                        "type": "Label",
+                                        "caption": "Ein einfacher RS485-zu-Ethernet-Adapter (z. B. ein Waveshare-Modul oder ein Elfin EW11) genügt -- angeschlossen an den F1/F2-Anschluss der Wärmepumpe (der interne Bus zwischen Außen-/Innengerät). Kein Samsung-Originalzubehör nötig. Der Adapter muss den seriellen Datenstrom 1:1 über eine TCP-Verbindung durchreichen (\"transparent bridge\"/\"serial to TCP\"), nicht selbst irgendetwas übersetzen. IP-Adresse und Port sind dann die des Adapters, nicht der Wärmepumpe selbst."
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "Port",
+                    "caption": "Port",
+                    "minimum": 1,
+                    "maximum": 65535
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "NumberSpinner",
+                            "name": "ListenSeconds",
+                            "caption": "Hörfenster je Aktualisierung",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "suffix": " s"
+                        },
+                        {
+                            "type": "PopupButton",
+                            "caption": "Warum ein Hörfenster statt einer direkten Abfrage?",
+                            "width": "460px",
+                            "popup": {
+                                "caption": "Warum ein Hörfenster statt einer direkten Abfrage?",
+                                "items": [
+                                    {
+                                        "type": "Label",
+                                        "caption": "Anders als Modbus fragt SamsungEhs keine einzelnen Werte gezielt ab -- Außen- und Innengerät tauschen auf dem NASA-Bus ohnehin laufend Statuswerte aus. Das Modul hört deshalb bei jedem Zyklus ein paar Sekunden mit und übernimmt, was in dieser Zeit vorbeikommt. Ein zu kurzes Fenster kann einzelne Werte verpassen (sie bleiben dann einfach auf dem letzten bekannten Stand)."
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "status": [
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "NASA-Bus nicht erreichbar oder keine bekannte Nachricht gesehen -- IP-Adresse/Port des Adapters prüfen"
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "id": "{D2B2A1E8-2F94-426C-8761-505A2F226977}",
+    "library": "{3BAE8FBC-ADF3-4BF6-8D3C-F04FAC043121}",
+    "name": "SamsungEhs",
+    "type": 3,
+    "vendor": "Samsung",
+    "aliases": [
+        "NRG-Stack SamsungEhs",
+        "Samsung EHS (NASA-Protokoll)"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "SAMEHS"
+}
