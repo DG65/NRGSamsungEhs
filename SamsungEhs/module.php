@@ -171,7 +171,10 @@ class SamsungEhs extends IPSModule
         $this->UpdateFormField('PurposeIntroPanel', 'visible', false);
     }
 
-    private const LICENSE_URL = 'https://github.com/DG65/NRGSamsungEhs/blob/ems-integration/LICENSE';
+    // Zeigt auf beta (erster Store-Release-Branch, siehe SUITE.md-Stolperfalle
+    // 01.09.2026: nicht blind auf main verlinken -- main existiert fuer dieses
+    // Repo noch nicht). Aktive Entwicklung bleibt auf ems-integration.
+    private const LICENSE_URL = 'https://github.com/DG65/NRGSamsungEhs/blob/beta/LICENSE';
     private const PAYPAL_URL = 'https://paypal.me/DietmarGureth';
 
     private function LicenseHint(): array
