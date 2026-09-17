@@ -28,20 +28,20 @@ require_once __DIR__ . '/libs/NasaBridgeClient.php';
 // Vertrag SAMEHS_GetFunctions() kompatibel zu WPHub/WPModbusHub/HeishaMon
 // (Type=>'heatpump', contractVersion 1.15, dieselben Feldnamen).
 //
-// Registerkarte (Nachrichtennummern) aus echoDaveD/ehs_sentinel_hacs_
-// integration (data/nasa_repository.yml, umfangreiche, aktiv gepflegte
-// Sammlung) -- NICHT an echter Hardware verifiziert (Stand 17.09.2026,
-// kein Testkonto/-geraet vorhanden). Paketformat UND CRC16-Algorithmus
-// dagegen direkt gegen die Referenz-Python-Implementierung geprueft (siehe
-// NasaBridgeClient.php-Kopf) -- hoehere Sicherheit als bei den reinen
-// Namens-/Adress-Zuordnungen. Bewusst nur lesend.
+// Registerkarte (Nachrichtennummern) aus einer umfangreichen, aktiv
+// gepflegten, unabhaengigen Sammlung -- NICHT an echter Hardware
+// verifiziert (Stand 17.09.2026, kein Testkonto/-geraet vorhanden).
+// Paketformat UND CRC16-Algorithmus dagegen direkt gegen eine unabhaengige
+// Referenz-Implementierung geprueft (siehe NasaBridgeClient.php-Kopf) --
+// hoehere Sicherheit als bei den reinen Namens-/Adress-Zuordnungen.
+// Bewusst nur lesend.
 
 class SamsungEhs extends IPSModule
 {
     const NEWS_VERSION = '0.1.0';
 
     // Bekannte NASA-Nachrichtennummern -> Ident/Bezeichnung. Alle bisher
-    // aufgenommenen Werte sind laut nasa_repository.yml vorzeichenbehaftete
+    // aufgenommenen Werte sind laut Quelle vorzeichenbehaftete
     // 2-Byte-Werte mit Faktor 10 ("arithmetic: value / 10"). Bewusst NUR
     // Felder aufgenommen, deren Ist/Soll-Richtung in der Quelle eindeutig
     // war.
@@ -159,7 +159,7 @@ class SamsungEhs extends IPSModule
             'caption'  => '👋  Wozu dieses Modul?',
             'items'    => [
                 ['type' => 'Label', 'caption' => 'SamsungEhs liest eine Samsung-EHS-Wärmepumpe direkt über den internen NASA-Bus (RS485, F1/F2-Anschluss) aus -- ohne Internet, ohne Herstellerkonto und ohne Samsungs offizielles Modbus-Zubehörmodul (MIM-B19N). Dafür reicht ein einfacher RS485-zu-Ethernet-Adapter.'],
-                ['type' => 'Label', 'caption' => 'Bewusst nur lesend und Stand heute ungeprüft an echter Hardware -- die Nachrichtennummern stammen aus einer aktiv gepflegten Community-Referenz (echoDaveD/ehs_sentinel), Paketformat und Prüfsumme wurden aber gegen deren echten Code verifiziert.'],
+                ['type' => 'Label', 'caption' => 'Bewusst nur lesend und Stand heute ungeprüft an echter Hardware -- die Nachrichtennummern stammen aus einer aktiv gepflegten Community-Referenz, Paketformat und Prüfsumme wurden aber gegen eine unabhängige Referenz-Implementierung verifiziert.'],
                 ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckPurposeIntro($id);'],
             ],
         ];

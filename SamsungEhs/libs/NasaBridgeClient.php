@@ -13,15 +13,14 @@
 // uebernimmt die zuletzt gesehenen Werte der bekannten Nachrichtennummern.
 // Bewusst rein lesend fuer die erste Version -- keine eigenen Pakete senden.
 //
-// Protokoll-Referenz: echoDaveD/ehs_sentinel_hacs_integration
-// (nasa_packet.py/nasa_message.py/data/nasa_repository.yml), aktiv gepflegte
-// Home-Assistant-Integration. Paketaufbau UND CRC16-Algorithmus (CRC-16/
-// XMODEM, Polynom 0x1021, Startwert 0) gegen die dortige Referenz-
+// Protokoll-Referenz: eine aktiv gepflegte, unabhaengige Open-Source-
+// Implementierung des NASA-Protokolls. Paketaufbau UND CRC16-Algorithmus
+// (CRC-16/XMODEM, Polynom 0x1021, Startwert 0) gegen diese Referenz-
 // Implementierung verifiziert -- ein selbst erzeugtes Testpaket
-// (Nachricht 0x8204 "Outdoor temperature") wurde mit der echten Python-
+// (Nachricht 0x8204 "Outdoor temperature") wurde mit der echten Referenz-
 // Klasse geparst und lieferte denselben Wert wie dieser PHP-Nachbau (siehe
 // .tools/test-module.php, Block 2). Zusaetzlich verifiziert: ein echtes,
-// im Referenz-Repo als Beispiel hinterlegtes Aufzeichnungspaket
+// im Referenz-Projekt als Beispiel hinterlegtes Aufzeichnungspaket
 // (Nachricht 0x4076) validiert mit demselben CRC16-Nachbau korrekt.
 //
 // Globaler Klassenname bewusst mit SAMEHS_-Praefix (Verbund-Konvention
@@ -169,7 +168,7 @@ class SAMEHS_NasaBridgeClient
         return $value;
     }
 
-    /** CRC-16/XMODEM (Polynom 0x1021, Startwert 0) -- identisch zu Pythons binascii.crc_hqx(data, 0). */
+    /** CRC-16/XMODEM (Polynom 0x1021, Startwert 0) -- Standardalgorithmus, gegen eine unabhängige Referenz-Implementierung verifiziert. */
     public function crc16Xmodem(string $data): int
     {
         $crc = 0;

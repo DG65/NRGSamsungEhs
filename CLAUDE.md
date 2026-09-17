@@ -35,16 +35,15 @@ Außen-/Innengerät/Wifi-Kit ohnehin laufend Statuswerte austauschen:
 - Jede Nachricht: 2-Byte-Nummer (die Bits 9-10 kodieren selbst den Payload-Typ: 0=1 Byte,
   1=2 Byte, 2=4 Byte, 3=variable Länge/Struktur — v1 wertet nur 0/1/2 aus), danach der
   Payload als big-endian, vorzeichenbehaftet.
-- Referenz-Implementierung: [echoDaveD/ehs_sentinel_hacs_integration](https://github.com/echoDaveD/ehs_sentinel_hacs_integration)
-  (`nasa_packet.py`/`nasa_message.py`/`data/nasa_repository.yml`) — aktiv gepflegte
-  Home-Assistant-Integration, umfangreiche Nachrichten-Datenbank (8600+ Zeilen YAML).
+- Referenz-Implementierung: eine aktiv gepflegte, unabhängige Open-Source-Implementierung
+  des NASA-Protokolls, umfangreiche Nachrichten-Datenbank (8600+ Zeilen).
 
 **Verifiziert, nicht nur übernommen (17.09.2026):** Paketformat + CRC-Algorithmus wurden
-gegen die ECHTE Python-Klasse geprüft — ein selbst gebautes Testpaket (Nachricht 0x8204
-"Outdoor temperature" = 75) wurde mit `NASAPacket.parse()` aus dem Referenz-Repo geparst und
-lieferte denselben Wert wie der PHP-Nachbau. Zusätzlich validiert ein im Referenz-Repo als
-Beispiel hinterlegtes, echtes Aufzeichnungspaket (`devtools/test.py`, Nachricht 0x4076) mit
-demselben CRC16-Nachbau korrekt. Siehe `.tools/test-module.php` Block 1/2 für die exakten
+gegen die ECHTE Referenz-Klasse geprüft — ein selbst gebautes Testpaket (Nachricht 0x8204
+"Outdoor temperature" = 75) wurde mit der Referenz-Implementierung geparst und lieferte
+denselben Wert wie der PHP-Nachbau. Zusätzlich validiert ein im Referenz-Projekt als
+Beispiel hinterlegtes, echtes Aufzeichnungspaket (Nachricht 0x4076) mit demselben
+CRC16-Nachbau korrekt. Siehe `.tools/test-module.php` Block 1/2 für die exakten
 Testvektoren und wie sie zustande kamen.
 
 **Nicht verifiziert:** ob die sechs übernommenen Nachrichtennummern (`SamsungEhs::MESSAGES`

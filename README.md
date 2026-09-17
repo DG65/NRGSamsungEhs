@@ -26,7 +26,7 @@ Anders als Modbus (Anfrage/Antwort auf einzelne Register) ist NASA ein eigenes P
 
 Erster Stand (0.1.0, 17.09.2026) — **bewusst nur lesend** und **an keiner echten Anlage verifiziert** (kein Testkonto/-gerät vorhanden). Zwei getrennt zu bewertende Bausteine:
 
-- **Paketformat und Prüfsumme (CRC-16/XMODEM)** sind gegen die echte Referenz-Implementierung ([echoDaveD/ehs_sentinel_hacs_integration](https://github.com/echoDaveD/ehs_sentinel_hacs_integration)) verifiziert — ein eigens gebautes Testpaket wurde mit deren echter Python-Klasse geparst und lieferte denselben Wert.
+- **Paketformat und Prüfsumme (CRC-16/XMODEM)** sind gegen eine unabhängige, aktiv gepflegte Referenz-Implementierung verifiziert — ein eigens gebautes Testpaket wurde damit geparst und lieferte denselben Wert.
 - **Die Zuordnung der sechs bisher ausgelesenen Werte** (Außentemperatur, Vorlauf/Rücklauf, Warmwasser Ist/Soll, Vorlauf-Soll) stammt aus derselben, aktiv gepflegten Community-Referenz — aber nicht live nachgemessen.
 
 Wer eine Samsung-EHS-Anlage mit einem generischen RS485-Adapter (kein MIM-B19N) hat und beim ersten echten Test helfen möchte: sehr willkommen, siehe Formular-Hinweis.

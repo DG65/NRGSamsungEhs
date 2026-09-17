@@ -3,9 +3,8 @@
 // Pruefstand fuer SamsungEhs (Muster: WPHub/WPModbusHub .tools/test-module.php).
 // Kein Netzzugriff: SAMEHS_NasaBridgeClient::extractMessages() wird direkt
 // mit vorgefertigten Byte-Strömen getestet statt über eine echte TCP-
-// Verbindung. Zwei der Testpakete sind gegen die ECHTE Python-Referenz-
-// implementierung (echoDaveD/ehs_sentinel_hacs_integration) verifiziert,
-// siehe Kommentare an den jeweiligen Tests.
+// Verbindung. Zwei der Testpakete sind gegen eine unabhängige Referenz-
+// implementierung verifiziert, siehe Kommentare an den jeweiligen Tests.
 //
 // Aufruf:  php .tools/test-module.php     (0 = alle Pruefungen bestanden)
 
@@ -245,15 +244,15 @@ require __DIR__ . '/../SamsungEhs/module.php';
 // ---------------------------------------------------------------------------
 echo "Block 1: CRC16/XMODEM -- gegen echte Referenzwerte verifiziert\n";
 // ---------------------------------------------------------------------------
-// Beide Vektoren sind KEINE erfundenen Zahlen: Vektor A ist ein im Referenz-
-// Repo (devtools/test.py) hinterlegtes, echtes Aufzeichnungsbeispiel; Vektor
-// B wurde selbst gebaut und mit der echten Python-Klasse (NASAPacket.parse())
-// gegengeprueft -- beide sind hier mit Pythons binascii.crc_hqx(data, 0)
-// nachgerechnet (siehe Sitzungsverlauf).
+// Beide Vektoren sind KEINE erfundenen Zahlen: Vektor A ist ein im
+// Referenz-Projekt hinterlegtes, echtes Aufzeichnungsbeispiel; Vektor B
+// wurde selbst gebaut und mit der echten Referenz-Implementierung
+// gegengeprueft -- beide wurden mit einem unabhaengigen CRC-16/XMODEM-
+// Nachbau (Startwert 0) gegengerechnet (siehe Sitzungsverlauf).
 
 $client = new SAMEHS_NasaBridgeClient('127.0.0.1', 8899);
 
-// Vektor A: echtes Beispielpaket aus devtools/test.py, CRC laut Python-Referenz 0x5a06.
+// Vektor A: echtes Beispielpaket aus dem Referenz-Projekt, CRC laut Referenz 0x5a06.
 $vectorA = chr(0x20) . chr(0x00) . chr(0x00) . chr(0x80) . chr(0xff) . chr(0x00) . chr(0xc0) . chr(0x15) . chr(0xa6) . chr(0x01) . chr(0x40) . chr(0x76) . chr(0xff);
 check('CRC16 Vektor A (echtes Beispielpaket) = 0x5a06', $client->crc16Xmodem($vectorA) === 0x5a06, '0x' . dechex($client->crc16Xmodem($vectorA)));
 
@@ -261,7 +260,7 @@ check('CRC16 Vektor A (echtes Beispielpaket) = 0x5a06', $client->crc16Xmodem($ve
 echo "Block 2: extractMessages() -- Paket-Erkennung und Dekodierung\n";
 // ---------------------------------------------------------------------------
 
-// Vektor B: selbst erzeugtes, aber gegen die echte NASAPacket.parse()-Klasse
+// Vektor B: selbst erzeugtes, aber gegen die echte Referenz-Parser-Klasse
 // geprueftes Paket fuer Nachricht 0x8204 (NASA_OUTDOOR_OUT_TEMP) = 75 (7.5°C).
 $packetB = hexToBin('32 00 12 10 00 00 ff 00 00 40 14 01 01 82 04 00 4b 85 5f 34');
 $messagesB = $client->extractMessages($packetB);
