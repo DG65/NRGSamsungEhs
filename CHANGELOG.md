@@ -1,5 +1,9 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.1.2 (Build 3) — 18.09.2026
+
+- **Forum-Hinweis-Panel verlinkt den echten Vorstellungsthread.** Der Thread ist seit heute live (Dietmar). Neues, einmalig dismissibles Panel „💬 Feedback im Symcon-Forum" (Muster WPHub), eingehängt zwischen den Fachpanels und „🧡 Über dieses Modul". 6 neue Tests.
+
 ## 0.1.1 (Build 2) — 18.09.2026
 
 - **Erster Beta-Release.** `beta`-Branch angelegt (bisher gab es nur `ems-integration`). Vor dem Wechsel geprüft: `php -l` + voller Testlauf grün, Store-Review-Checkliste Punkt 12 (Neuinstallations-Simulation) durchgegangen — keine eigenen Objekt-/Variablen-IDs, PLZ/Adressen im Formular-Code, `library.json` nur die 8 Store-Felder, `vendor: "Samsung"` (Gerätehersteller, korrekt für dieses herstellergebundene Modul). `migrationsvergleich.php` (SUITE.md 9e) entfällt für diesen ersten Beta-Stand — kein Vorgänger-Stand zum Vergleichen. Zusätzlich: `SAMEHS_NasaBridgeClient::listen()` mit einem selbst gebauten, echten TCP-Testserver über eine echte Verbindung verifiziert (nicht nur gegen die Testattrappe) — Verbindungsaufbau und Paket-Erkennung inklusive Störbytes bestätigt korrekt. `LICENSE_URL` zeigt jetzt auf `beta` statt `ems-integration`.

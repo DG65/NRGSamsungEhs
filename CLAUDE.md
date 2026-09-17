@@ -69,7 +69,9 @@ Zielwerte braucht das.
 
 - Keine Steuerbefehle (nur lesend).
 - Keine Leistungs-/Energiezähler.
-- Kein Forum-Hinweis-Panel (noch kein Thread, Muster WPHub/WPModbusHub).
+- ~~Kein Forum-Hinweis-Panel~~ — erledigt 18.09.2026: Thread ist live
+  (https://community.symcon.de/t/modul-nrg-stack-samsungehs-lokale-anbindung-fuer-samsung-ehs-waermepumpen-ueber-das-interne-nasa-protokoll-rs485/144422),
+  Panel `ForumHint()`/`AckForumHint()` verlinkt (0.1.2).
 - Kein News-Panel-Inhalt über die Erstversion hinaus.
 
 ## Branch-Modell

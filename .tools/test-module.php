@@ -403,6 +403,25 @@ $mod->AckPurposeIntro();
 $formAfterAck = json_decode($mod->GetConfigurationForm(), true);
 check('"Wozu dieses Modul?"-Panel verschwindet nach Bestätigen', findFormElement($formAfterAck['elements'], 'PurposeIntroPanel') === null);
 
+// Forum-Hinweis -- echter Thread-Link, einmalig dismissible, steht vor
+// "Über dieses Modul" (letztes Element).
+$forumPanel = findFormElement($form['elements'], 'ForumHintPanel');
+check('Forum-Hinweis-Panel vorhanden', $forumPanel !== null);
+check('Forum-Hinweis-Caption korrekt', ($forumPanel['caption'] ?? '') === '💬  Feedback im Symcon-Forum');
+$forumIndex = array_search('ForumHintPanel', array_column($form['elements'], 'name'), true);
+check('Forum-Hinweis steht vor "Über dieses Modul"', $forumIndex !== false && $forumIndex < count($form['elements']) - 1);
+$forumButton = null;
+foreach (($forumPanel['items'] ?? []) as $item) {
+    if (($item['caption'] ?? '') === 'Zum Forums-Thread') {
+        $forumButton = $item;
+    }
+}
+check('Forum-Knopf vorhanden mit link=true', $forumButton !== null && ($forumButton['link'] ?? false) === true);
+check('Forum-Knopf-onClick ist ein echo auf den echten Thread-Link', strpos($forumButton['onClick'] ?? '', "echo 'https://community.symcon.de/t/modul-nrg-stack-samsungehs-") === 0, $forumButton['onClick'] ?? 'null');
+$mod->AckForumHint();
+$formAfterForumAck = json_decode($mod->GetConfigurationForm(), true);
+check('Forum-Hinweis-Panel verschwindet nach Bestätigen', findFormElement($formAfterForumAck['elements'], 'ForumHintPanel') === null);
+
 // ---------------------------------------------------------------------------
 echo "Block 7: Vollstaendigkeit der Methodenaufrufe\n";
 // ---------------------------------------------------------------------------
