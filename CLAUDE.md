@@ -109,6 +109,26 @@ Zielwerte braucht das.
 - ~~Kein News-Panel-Inhalt über die Erstversion hinaus~~ — erster echter Inhalt seit 0.1.3
   (Diagnose-Debugausgabe, siehe oben).
 
+## Heizkurven-Recherche für Dashboard (18.09.2026)
+
+Dashboard-Sitzung wollte einen einheitlichen `*_GetHeatingCurve`/`*_SetHeatingCurve`-Vertrag
+fuer WPHub/WPModbusHub/SamsungEhs klaeren (Belege siehe Chat-Transkript). Ergebnis fuer
+SamsungEhs: **das NASA-Protokoll hat das sauberste Zwei-Punkt-Modell** der ganzen Liste --
+FSV 5017 Heizen WL1/WL2 (Nachrichten 0x4279/0x427A) und FSV 5015 Kuehlen WL1/WL2
+(0x4277/0x4278), getrennt nach Heizen/Kuehlen. Als `VAR_IN_*` primaer als LESBAR
+dokumentiert; Schreibbarkeit ueber NASA-Opcode 0x12/0x13 ist protokollseitig vorgesehen, aber
+in den Quellen nicht als "getestet schreibbar" bestaetigt. **Wichtig:** SamsungEhs sendet
+heute technisch GAR KEINE aktiven Pakete (bewusst reiner Passiv-Mitschnitt, siehe oben) --
+Schreiben waere kein Registerkarten-Zusatz, sondern ein komplett neuer Architekturbaustein
+(aktiver Paketversand + Warten auf Bestaetigung).
+
+**Dietmars Entscheidung (Dashboard, 18.09.2026):** WPMonitor-Heizkurven-Reiter v1 wird NUR
+gegen HeishaMon gebaut. SamsungEhs bekommt **keinen Zeitdruck** -- Dashboard-Vertrag erhaelt
+Kapazitaetsfelder (`curveModel`/`curveWritable`) fuer spaeteres Andocken ohne UI-Umbau.
+SamsungEhs wurde von Dashboard als "am ehesten realistisch" fuer spaeteres Andocken genannt
+(sauberstes Modell) -- aber erst nach Paket-Versand-Baustein UND echter Hardware-Verifikation,
+dann von uns aus bei Dashboard melden.
+
 ## Branch-Modell
 
 `ems-integration` bleibt der aktive Entwicklungsbranch. Seit 18.09.2026 existiert zusätzlich
