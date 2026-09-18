@@ -1,7 +1,7 @@
 # SamsungEhs — lokale NASA-Protokoll-Anbindung für Samsung-EHS-Wärmepumpen (IP-Symcon)
 
 ![Symcon](https://img.shields.io/badge/Symcon-PHPModul-blue)
-![Modul Version](https://img.shields.io/badge/Modul_Version-0.1.3-blue)
+![Modul Version](https://img.shields.io/badge/Modul_Version-0.1.4-blue)
 ![Symcon Version](https://img.shields.io/badge/Symcon_Version-9.0%2B-blue)
 ![License](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-lightgrey)
 [![Check Style](https://github.com/DG65/NRGSamsungEhs/actions/workflows/check-style.yml/badge.svg)](https://github.com/DG65/NRGSamsungEhs/actions/workflows/check-style.yml)
@@ -24,7 +24,7 @@ Anders als Modbus (Anfrage/Antwort auf einzelne Register) ist NASA ein eigenes P
 
 ## Status
 
-Stand 0.1.3 (18.09.2026) — **bewusst nur lesend**. Drei getrennt zu bewertende Bausteine:
+Stand 0.1.4 (18.09.2026) — **bewusst nur lesend**. Drei getrennt zu bewertende Bausteine:
 
 - **Paketformat und Prüfsumme (CRC-16/XMODEM)** sind gegen eine unabhängige, aktiv gepflegte Referenz-Implementierung verifiziert — ein eigens gebautes Testpaket wurde damit geparst und lieferte denselben Wert.
 - **Vier der sechs Werte sind seit 18.09.2026 an einer echten Anlage bestätigt** (Community-Tester, NASA-Bus über einen generischen Waveshare-RS485-Adapter): Außentemperatur, Vorlauf-, Rücklauftemperatur und Warmwasser Ist kamen mit plausiblen Werten an. **Warmwasser Soll und Vorlauf-Soll blieben in diesem Test leer** — die zugehörigen NASA-Nachrichten wurden im Hörfenster schlicht nicht gesehen (vermutlich seltener gesendet als die ständig aktualisierten Messwerte, kein Hinweis auf eine falsche Adresse). Zur Diagnose gibt die Instanz seit 0.1.3 über die IPS-eigene Debugausgabe alle im Hörfenster gesehenen NASA-Nachrichtennummern samt Rohwert aus.

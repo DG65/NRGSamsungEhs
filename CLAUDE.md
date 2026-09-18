@@ -72,11 +72,24 @@ der Home-Assistant-Seite noetig ist. Kein Code-Fix vorgesehen, solange nicht kla
 beim Tester tatsaechlich hilft -- ggf. spaeter ein Hinweis-Popup im Formular ("NASA-Bus wird
 bereits von einer anderen Anwendung genutzt?").
 
+**Nachtrag 18.09.2026:** Simon hat den Multi-Client-Vorschlag geprueft -- funktioniert NICHT.
+Sein Waveshare-Adapter interpretiert eingehende Bytes bei aktiviertem "Multi-host"/anderem
+Protokoll-Modus als Modbus-RTU-Rahmen und wuerde die NASA-Pakete falsch parsen bzw. verwerfen
+(NASA ist proprietaer, kein Modbus). Er versucht stattdessen die Fan-out-Route über
+Home Assistant. Zusaetzlich bat er, das Hoerfenster waehrend der laufenden Fehlersuche laenger
+als 10s einstellen zu koennen -- `ListenSeconds` ist seit 0.1.4 auf 1-60s erweitert (Cap in
+`Update()` und `form.json`-NumberSpinner). Hinweis im Formular ergaenzt: Werte über ca. 30s
+koennen an der IPS-eigenen Skript-Ausführungszeit scheitern (Kernel-Einstellungen,
+installationsabhaengig) -- betrifft dann nur den einzelnen Zyklus, kein Datenverlust. Ausserdem
+verlaengert ein Hoerfenster nahe am Aktualisierungsintervall den tatsaechlichen Zyklus
+entsprechend (Timer wird nicht parallel, sondern sequentiell nachgeholt).
+
 ## Architektur — bewusst anders als Modbus-basierte Module
 
 Kein Anfrage/Antwort-Schema. `SAMEHS_NasaBridgeClient::listen($seconds)` verbindet sich zum
 RS485-zu-TCP-Adapter, sammelt für ein konfigurierbares Zeitfenster (Property
-`ListenSeconds`, 1-10s) alle eintreffenden Bytes und extrahiert daraus alle vollständigen,
+`ListenSeconds`, 1-60s, seit 0.1.4 -- vorher 1-10s, auf Simons Testwunsch
+angehoben, siehe Livetest-Abschnitt oben) alle eintreffenden Bytes und extrahiert daraus alle vollständigen,
 CRC-gültigen Pakete (`extractMessages()` — öffentlich, damit der Prüfstand sie direkt mit
 vorgefertigten Byte-Strömen testen kann, ohne echtes TCP). Ungültige/unvollständige Pakete
 werden übersprungen (Resync durch Ein-Byte-Vorruecken), kein Absturz.

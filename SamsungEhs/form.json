@@ -92,7 +92,7 @@
                             "name": "ListenSeconds",
                             "caption": "Hörfenster je Aktualisierung",
                             "minimum": 1,
-                            "maximum": 10,
+                            "maximum": 60,
                             "suffix": " s"
                         },
                         {
@@ -104,7 +104,7 @@
                                 "items": [
                                     {
                                         "type": "Label",
-                                        "caption": "Anders als Modbus fragt SamsungEhs keine einzelnen Werte gezielt ab -- Außen- und Innengerät tauschen auf dem NASA-Bus ohnehin laufend Statuswerte aus. Das Modul hört deshalb bei jedem Zyklus ein paar Sekunden mit und übernimmt, was in dieser Zeit vorbeikommt. Ein zu kurzes Fenster kann einzelne Werte verpassen (sie bleiben dann einfach auf dem letzten bekannten Stand)."
+                                        "caption": "Anders als Modbus fragt SamsungEhs keine einzelnen Werte gezielt ab -- Außen- und Innengerät tauschen auf dem NASA-Bus ohnehin laufend Statuswerte aus. Das Modul hört deshalb bei jedem Zyklus ein paar Sekunden mit und übernimmt, was in dieser Zeit vorbeikommt. Ein zu kurzes Fenster kann einzelne Werte verpassen (sie bleiben dann einfach auf dem letzten bekannten Stand). Werte über ca. 30s können bei manchen IP-Symcon-Installationen an der Skript-Ausführungszeit (Kernel-Einstellungen) scheitern -- betrifft dann nur den einzelnen Zyklus, kein Datenverlust. Ein Hörfenster nahe am Aktualisierungsintervall verlängert den tatsächlichen Zyklus entsprechend (das Modul wartet die Aufnahme immer ab, auch wenn der Timer eigentlich schon wieder fällig wäre)."
                                     }
                                 ]
                             }

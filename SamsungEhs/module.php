@@ -38,7 +38,7 @@ require_once __DIR__ . '/libs/NasaBridgeClient.php';
 
 class SamsungEhs extends IPSModule
 {
-    const NEWS_VERSION = '0.1.3';
+    const NEWS_VERSION = '0.1.4';
 
     // Bekannte NASA-Nachrichtennummern -> Ident/Bezeichnung. Alle bisher
     // aufgenommenen Werte sind laut Quelle vorzeichenbehaftete
@@ -117,7 +117,7 @@ class SamsungEhs extends IPSModule
                 'caption'  => '🆕 Neu in Version ' . self::NEWS_VERSION,
                 'expanded' => true,
                 'items'    => [
-                    ['type' => 'Label', 'caption' => '• Diagnose-Hilfe: die IPS-eigene Debugausgabe zeigt jetzt alle im Hörfenster tatsächlich gesehenen NASA-Nachrichtennummern samt Rohwert -- praktisch, wenn erwartete Werte (noch) leer bleiben.'],
+                    ['type' => 'Label', 'caption' => '• Hörfenster je Aktualisierung jetzt bis 60s einstellbar (vorher 10s) -- praktisch für die Fehlersuche bei selten gesendeten Werten.'],
                     ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckNews($id);'],
                 ],
             ]);
@@ -245,7 +245,7 @@ class SamsungEhs extends IPSModule
             return;
         }
         $client = new SAMEHS_NasaBridgeClient($host, $this->ReadPropertyInteger('Port'));
-        $seconds = max(1, min(10, $this->ReadPropertyInteger('ListenSeconds')));
+        $seconds = max(1, min(60, $this->ReadPropertyInteger('ListenSeconds')));
         $raw = $client->listen((float)$seconds);
 
         if ($raw === null) {
