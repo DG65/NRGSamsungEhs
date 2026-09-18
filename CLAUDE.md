@@ -46,19 +46,29 @@ Beispiel hinterlegtes, echtes Aufzeichnungspaket (Nachricht 0x4076) mit demselbe
 CRC16-Nachbau korrekt. Siehe `.tools/test-module.php` Block 1/2 für die exakten
 Testvektoren und wie sie zustande kamen.
 
-**Teilweise live bestätigt (18.09.2026):** Community-Tester "sunnyww"/Simon (derselbe Nutzer,
-dessen Forumskommentar dieses Modul angestoßen hat) hat SamsungEhs an seiner echten Anlage
-installiert (Waveshare RS485-zu-Ethernet-Adapter, lokal F1/F2 abgegriffen). Vier der sechs
-`MESSAGES`-Einträge kamen mit plausiblen Werten an: Aussentemperatur 20.3°C,
-Vorlauftemperatur 25.3°C, Ruecklauftemperatur 24.8°C, Warmwasser 44.8°C — Adresse UND Faktor
-10 damit für diese vier Felder bestätigt. `WarmwasserSoll` (0x4235) und `Zone1Soll`/
-Vorlauf-Soll (0x4247) blieben leer -- vermutlich broadcasten Sollwert-Nachrichten seltener
-als die staendig aktualisierten Messwerte und fielen im 3s-Hoerfenster (Default
-`ListenSeconds`) nicht rein, kein Hinweis auf falsche Nachrichtennummern. Zur Diagnose gibt
-`Update()` seit 0.1.3 ueber `SendDebug()` alle im Hoerfenster gesehenen Nachrichtennummern
-samt Rohwert aus (auch unbekannte, nicht nur die sechs aus `MESSAGES`) -- hilft sowohl beim
-Pruefen der beiden fehlenden Felder (laengeres Hoerfenster? andere Update-Zyklen abwarten?)
-als auch bei kuenftigen MESSAGES-Ergaenzungen.
+**Vollständig live bestätigt (18.09.2026):** Community-Tester "sunnyww"/Simon (derselbe
+Nutzer, dessen Forumskommentar dieses Modul angestoßen hat) hat SamsungEhs an seiner echten
+Anlage installiert (Waveshare RS485-zu-Ethernet-Adapter, lokal F1/F2 abgegriffen). Mit
+`ListenSeconds`=60 (siehe unten) kamen jetzt **alle sechs `MESSAGES`-Einträge** mit
+plausiblen Werten an: Aussentemperatur 21.2°C, Vorlauftemperatur 25.3°C, Ruecklauftemperatur
+24.7°C, Warmwasser 43.6°C, WarmwasserSoll 45.0°C, Zone1Soll (Vorlauf-Soll) 32.0°C. Adresse
+UND Faktor 10 damit für ALLE sechs Felder bestätigt -- die beiden zuvor fehlenden
+(WarmwasserSoll/Zone1Soll) waren also tatsaechlich nur ein zu kurzes Hoerfenster (siehe
+vorherige Version dieses Abschnitts), keine falschen Nachrichtennummern.
+
+**Bonus-Fund im 514KB-Debugdump (18.09.2026):** Simon hat den vollen `SendDebug()`-Mitschnitt
+geschickt (200 Zyklen à 60s). Eine Stichprobe der 0x42xx-Nachrichtennummern zeigt: die in der
+Dashboard-Heizkurven-Recherche vermuteten NASA-Wasserkurven-Nachrichten (FSV 5015 Kuehlen
+WL1/WL2 = 0x4277/0x4278, FSV 5017 Heizen WL1/WL2 = 0x4279/0x427A, dazu 0x4248 "Water Law
+Target") tauchen tatsaechlich mit plausiblen Werten auf Simons realem Bus auf (z.B.
+0x4277=250, 0x4278=250 -> 25.0°C). Das ist noch KEINE vollstaendige Verifikation (Rohwert
+ohne Gegenpruefung gegen eine App-Einstellung, Schreibbarkeit weiterhin ungetestet, und die
+exakten Nachrichtennamen stammen nur aus der Community-Referenz) -- aber die erste echte
+Evidenz, dass diese Nachrichtennummern auf einer echten Anlage ueberhaupt aktiv gesendet
+werden. Noch nicht in `MESSAGES` uebernommen (kein Ist/Soll-Vertrag dafuer vorgesehen, siehe
+Abschnitt "Heizkurven-Recherche für Dashboard" weiter unten). Zur Diagnose gibt `Update()` seit 0.1.3 ueber
+`SendDebug()` alle im Hoerfenster gesehenen Nachrichtennummern samt Rohwert aus (auch
+unbekannte, nicht nur die sechs aus `MESSAGES`).
 
 **Bekannte Betriebs-Falle, noch nicht im Modul geloest:** Simons Waveshare-Adapter laeuft im
 Modus "TCP Client" fest verdrahtet auf eine bestehende Home-Assistant-NASA-Anbindung
@@ -128,6 +138,12 @@ Kapazitaetsfelder (`curveModel`/`curveWritable`) fuer spaeteres Andocken ohne UI
 SamsungEhs wurde von Dashboard als "am ehesten realistisch" fuer spaeteres Andocken genannt
 (sauberstes Modell) -- aber erst nach Paket-Versand-Baustein UND echter Hardware-Verifikation,
 dann von uns aus bei Dashboard melden.
+
+**Update 18.09.2026 (nach Dietmars Nachricht):** Simons Debugdump zeigt, dass 0x4277/0x4278/
+0x4279/0x427A tatsaechlich live auf seinem Bus auftauchen (siehe Abschnitt "Vollständig live
+bestätigt" oben) -- staerkt die Einschaetzung "am ehesten realistisch", ist aber weiterhin
+KEINE Verifikation von Bedeutung oder Schreibbarkeit. Noch kein Anlass, das an Dashboard zu
+melden (die warten explizit auf Schreibzugriff, nicht auf Lese-Indizien).
 
 ## Branch-Modell
 

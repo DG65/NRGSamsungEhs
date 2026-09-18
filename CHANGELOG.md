@@ -3,6 +3,7 @@
 ## 0.1.4 (Build 5) — 18.09.2026
 
 - **Hörfenster bis 60s statt bisher 10s.** Auf Wunsch des Testers (Simon, siehe 0.1.3): sein Multi-Client-Adapter-Modus scheiterte (Waveshare interpretiert die Bytes dann fälschlich als Modbus-RTU), er testet jetzt die Fan-out-Route über Home Assistant und wollte währenddessen länger mithören können. `ListenSeconds`-Obergrenze in `Update()` und Formular auf 60s angehoben, Hinweistext ergänzt (mögliche Kollision mit der IPS-eigenen Skript-Ausführungszeit ab ca. 30s, sowie: ein langes Hörfenster verlängert den tatsächlichen Zyklus über das eingestellte Aktualisierungsintervall hinaus).
+- **Ergebnis:** Mit 60s Hörfenster kamen bei Simon jetzt alle sechs `MESSAGES`-Felder an (vorher vier von sechs) — Adresse und Faktor 10 damit für die komplette Registerkarte an echter Hardware bestätigt. Die beiden zuvor fehlenden Sollwerte (Warmwasser Soll, Vorlauf-Soll) waren also nur ein zu kurzes Hörfenster, keine falschen Nachrichtennummern.
 
 ## 0.1.3 (Build 4) — 18.09.2026
 
