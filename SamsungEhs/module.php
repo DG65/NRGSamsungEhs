@@ -38,7 +38,7 @@ require_once __DIR__ . '/libs/NasaBridgeClient.php';
 
 class SamsungEhs extends IPSModule
 {
-    const NEWS_VERSION = '0.1.0';
+    const NEWS_VERSION = '0.1.3';
 
     // Bekannte NASA-Nachrichtennummern -> Ident/Bezeichnung. Alle bisher
     // aufgenommenen Werte sind laut Quelle vorzeichenbehaftete
@@ -117,7 +117,7 @@ class SamsungEhs extends IPSModule
                 'caption'  => '🆕 Neu in Version ' . self::NEWS_VERSION,
                 'expanded' => true,
                 'items'    => [
-                    ['type' => 'Label', 'caption' => '• Erste Version: hört auf den lokalen NASA-Bus (RS485, F1/F2) mit und liest Außentemperatur, Vorlauf/Rücklauf sowie Warmwasser-Werte -- ohne Samsungs offizielles Modbus-Zubehörmodul.'],
+                    ['type' => 'Label', 'caption' => '• Diagnose-Hilfe: die IPS-eigene Debugausgabe zeigt jetzt alle im Hörfenster tatsächlich gesehenen NASA-Nachrichtennummern samt Rohwert -- praktisch, wenn erwartete Werte (noch) leer bleiben.'],
                     ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckNews($id);'],
                 ],
             ]);
@@ -254,6 +254,18 @@ class SamsungEhs extends IPSModule
             $this->LogMessage('NASA-Bruecke nicht erreichbar (' . $host . ':' . $this->ReadPropertyInteger('Port') . '): ' . $client->lastError, KL_WARNING);
             return;
         }
+
+        // Diagnose fuer Tester: alle im Hoerfenster gesehenen Nachrichtennummern
+        // (nicht nur die bekannten aus MESSAGES) samt Rohwert, sichtbar ueber
+        // die IPS-eigene Instanz-Debugausgabe. Hilft z. B. zu erkennen, ob ein
+        // erwartetes Setpoint-Register schlicht nicht im Zeitfenster broadcastet
+        // wurde (Bus traegt es seltener als die staendig gesendeten Messwerte),
+        // und liefert Rohdaten fuer kuenftige MESSAGES-Ergaenzungen.
+        $this->SendDebug(
+            'NASA-Nachrichten im Hörfenster',
+            implode(', ', array_map(fn($k, $v) => sprintf('0x%04X=%d', $k, $v), array_keys($raw), $raw)),
+            0
+        );
 
         $values = [];
         foreach (self::MESSAGES as $msgNum => $def) {

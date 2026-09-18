@@ -1,5 +1,9 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.1.3 (Build 4) — 18.09.2026
+
+- **Erste Live-Bestätigung an echter Hardware.** Community-Tester "sunnyww"/Simon hat SamsungEhs an seiner Anlage installiert: vier der sechs Nachrichtennummern (Außentemperatur, Vorlauf-, Rücklauftemperatur, Warmwasser Ist) liefern plausible, korrekt skalierte Werte. Warmwasser Soll und Vorlauf-Soll kamen im Test nicht an — vermutlich seltener gesendete Nachrichten, die ins 3s-Hörfenster nicht reinfielen. Zur Diagnose gibt `Update()` jetzt über die IPS-eigene Debugausgabe (`SendDebug()`) alle im Hörfenster tatsächlich gesehenen NASA-Nachrichtennummern samt Rohwert aus — auch unbekannte, nicht nur die sechs bisher ausgewerteten. Hilft sowohl beim Nachvollziehen fehlender Felder als auch bei künftigen `MESSAGES`-Ergänzungen.
+
 ## 0.1.2 (Build 3) — 18.09.2026
 
 - **Forum-Hinweis-Panel verlinkt den echten Vorstellungsthread.** Der Thread ist seit heute live (Dietmar). Neues, einmalig dismissibles Panel „💬 Feedback im Symcon-Forum" (Muster WPHub), eingehängt zwischen den Fachpanels und „🧡 Über dieses Modul". 6 neue Tests.

@@ -46,10 +46,31 @@ Beispiel hinterlegtes, echtes Aufzeichnungspaket (Nachricht 0x4076) mit demselbe
 CRC16-Nachbau korrekt. Siehe `.tools/test-module.php` Block 1/2 für die exakten
 Testvektoren und wie sie zustande kamen.
 
-**Nicht verifiziert:** ob die sechs übernommenen Nachrichtennummern (`SamsungEhs::MESSAGES`
-in `module.php`) an einer echten Anlage tatsächlich diese Bedeutung/Skalierung haben — nur
-aus der Community-Quelle übernommen, kein eigener Login/keine eigene Hardware zum
-Gegenprüfen.
+**Teilweise live bestätigt (18.09.2026):** Community-Tester "sunnyww"/Simon (derselbe Nutzer,
+dessen Forumskommentar dieses Modul angestoßen hat) hat SamsungEhs an seiner echten Anlage
+installiert (Waveshare RS485-zu-Ethernet-Adapter, lokal F1/F2 abgegriffen). Vier der sechs
+`MESSAGES`-Einträge kamen mit plausiblen Werten an: Aussentemperatur 20.3°C,
+Vorlauftemperatur 25.3°C, Ruecklauftemperatur 24.8°C, Warmwasser 44.8°C — Adresse UND Faktor
+10 damit für diese vier Felder bestätigt. `WarmwasserSoll` (0x4235) und `Zone1Soll`/
+Vorlauf-Soll (0x4247) blieben leer -- vermutlich broadcasten Sollwert-Nachrichten seltener
+als die staendig aktualisierten Messwerte und fielen im 3s-Hoerfenster (Default
+`ListenSeconds`) nicht rein, kein Hinweis auf falsche Nachrichtennummern. Zur Diagnose gibt
+`Update()` seit 0.1.3 ueber `SendDebug()` alle im Hoerfenster gesehenen Nachrichtennummern
+samt Rohwert aus (auch unbekannte, nicht nur die sechs aus `MESSAGES`) -- hilft sowohl beim
+Pruefen der beiden fehlenden Felder (laengeres Hoerfenster? andere Update-Zyklen abwarten?)
+als auch bei kuenftigen MESSAGES-Ergaenzungen.
+
+**Bekannte Betriebs-Falle, noch nicht im Modul geloest:** Simons Waveshare-Adapter laeuft im
+Modus "TCP Client" fest verdrahtet auf eine bestehende Home-Assistant-NASA-Anbindung
+(Destination-IP/Port), "Multi-host" ist deaktiviert. Viele dieser RS485-zu-Ethernet-Adapter
+erlauben nur EINE aktive TCP-Verbindung gleichzeitig -- SamsungEhs und eine bereits
+laufende Home-Assistant-Integration konkurrieren dann um denselben Socket, was das
+beobachtete Flackern zwischen "OK" und "nicht erreichbar" erklaeren wuerde (kein
+SamsungEhs-Bug, sondern eine Adapter-/Netzwerktopologie-Frage). Noch offen: ob Simons
+Adapter im Server-Modus mehrere gleichzeitige Clients erlaubt, oder ob ein TCP-Fan-out auf
+der Home-Assistant-Seite noetig ist. Kein Code-Fix vorgesehen, solange nicht klar ist, was
+beim Tester tatsaechlich hilft -- ggf. spaeter ein Hinweis-Popup im Formular ("NASA-Bus wird
+bereits von einer anderen Anwendung genutzt?").
 
 ## Architektur — bewusst anders als Modbus-basierte Module
 
@@ -72,13 +93,16 @@ Zielwerte braucht das.
 - ~~Kein Forum-Hinweis-Panel~~ — erledigt 18.09.2026: Thread ist live
   (https://community.symcon.de/t/modul-nrg-stack-samsungehs-lokale-anbindung-fuer-samsung-ehs-waermepumpen-ueber-das-interne-nasa-protokoll-rs485/144422),
   Panel `ForumHint()`/`AckForumHint()` verlinkt (0.1.2).
-- Kein News-Panel-Inhalt über die Erstversion hinaus.
+- ~~Kein News-Panel-Inhalt über die Erstversion hinaus~~ — erster echter Inhalt seit 0.1.3
+  (Diagnose-Debugausgabe, siehe oben).
 
 ## Branch-Modell
 
 `ems-integration` bleibt der aktive Entwicklungsbranch. Seit 18.09.2026 existiert zusätzlich
-`beta` (erster Store-Release-Branch) — wird nur bei Bedarf von `ems-integration`
-nachgezogen, kein automatischer Gleichlauf. `main` existiert für dieses Repo noch nicht.
+`beta` (erster Store-Release-Branch). **Seit 18.09.2026 (Dietmars Entscheidung): beide
+Branches laufen automatisch gleich** — jeder Push nach `ems-integration` geht im selben Zug
+auch nach `beta`, kein manuelles Nachziehen mehr nötig. `main` existiert für dieses Repo noch
+nicht.
 
 ## Verbund-Manifest SUITE.md
 

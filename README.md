@@ -1,7 +1,7 @@
 # SamsungEhs — lokale NASA-Protokoll-Anbindung für Samsung-EHS-Wärmepumpen (IP-Symcon)
 
 ![Symcon](https://img.shields.io/badge/Symcon-PHPModul-blue)
-![Modul Version](https://img.shields.io/badge/Modul_Version-0.1.2-blue)
+![Modul Version](https://img.shields.io/badge/Modul_Version-0.1.3-blue)
 ![Symcon Version](https://img.shields.io/badge/Symcon_Version-9.0%2B-blue)
 ![License](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-lightgrey)
 [![Check Style](https://github.com/DG65/NRGSamsungEhs/actions/workflows/check-style.yml/badge.svg)](https://github.com/DG65/NRGSamsungEhs/actions/workflows/check-style.yml)
@@ -24,10 +24,11 @@ Anders als Modbus (Anfrage/Antwort auf einzelne Register) ist NASA ein eigenes P
 
 ## Status
 
-Erster Stand (0.1.0, 17.09.2026) — **bewusst nur lesend** und **an keiner echten Anlage verifiziert** (kein Testkonto/-gerät vorhanden). Zwei getrennt zu bewertende Bausteine:
+Stand 0.1.3 (18.09.2026) — **bewusst nur lesend**. Drei getrennt zu bewertende Bausteine:
 
 - **Paketformat und Prüfsumme (CRC-16/XMODEM)** sind gegen eine unabhängige, aktiv gepflegte Referenz-Implementierung verifiziert — ein eigens gebautes Testpaket wurde damit geparst und lieferte denselben Wert.
-- **Die Zuordnung der sechs bisher ausgelesenen Werte** (Außentemperatur, Vorlauf/Rücklauf, Warmwasser Ist/Soll, Vorlauf-Soll) stammt aus derselben, aktiv gepflegten Community-Referenz — aber nicht live nachgemessen.
+- **Vier der sechs Werte sind seit 18.09.2026 an einer echten Anlage bestätigt** (Community-Tester, NASA-Bus über einen generischen Waveshare-RS485-Adapter): Außentemperatur, Vorlauf-, Rücklauftemperatur und Warmwasser Ist kamen mit plausiblen Werten an. **Warmwasser Soll und Vorlauf-Soll blieben in diesem Test leer** — die zugehörigen NASA-Nachrichten wurden im Hörfenster schlicht nicht gesehen (vermutlich seltener gesendet als die ständig aktualisierten Messwerte, kein Hinweis auf eine falsche Adresse). Zur Diagnose gibt die Instanz seit 0.1.3 über die IPS-eigene Debugausgabe alle im Hörfenster gesehenen NASA-Nachrichtennummern samt Rohwert aus.
+- **Wer denselben NASA-Bus bereits für eine andere lokale Anbindung nutzt** (z. B. eine bestehende Home-Assistant-Integration über denselben RS485-zu-Ethernet-Adapter): viele dieser Adapter erlauben nur eine einzige aktive TCP-Verbindung gleichzeitig. Läuft der Adapter im Modus „TCP Client" fest verdrahtet auf ein anderes Ziel, kann SamsungEhs u. U. nur sporadisch mitlesen. Am saubersten: einen Adapter-Modus mit mehreren gleichzeitigen Verbindungen (z. B. „TCP Server" mit mehreren Clients, falls vom Adapter unterstützt) oder einen einfachen TCP-Fan-out auf der Gegenstelle.
 
 Wer eine Samsung-EHS-Anlage mit einem generischen RS485-Adapter (kein MIM-B19N) hat und beim ersten echten Test helfen möchte: sehr willkommen, siehe Formular-Hinweis.
 
