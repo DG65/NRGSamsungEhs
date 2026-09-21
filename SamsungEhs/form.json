@@ -54,6 +54,11 @@
             "expanded": true,
             "items": [
                 {
+                    "type": "Label",
+                    "name": "ConnectionStatus",
+                    "caption": ""
+                },
+                {
                     "type": "RowLayout",
                     "items": [
                         {

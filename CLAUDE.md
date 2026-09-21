@@ -145,6 +145,17 @@ bestätigt" oben) -- staerkt die Einschaetzung "am ehesten realistisch", ist abe
 KEINE Verifikation von Bedeutung oder Schreibbarkeit. Noch kein Anlass, das an Dashboard zu
 melden (die warten explizit auf Schreibzugriff, nicht auf Lese-Indizien).
 
+## Statuszeile im Formular (0.2.0, 21.09.2026)
+
+Dietmar: "Ja, Statuszeilen nachruesten". Label `ConnectionStatus` als erstes Element im
+ConnectionPanel (form.json nur leerer Platzhalter), live gefuellt in `GetConfigurationForm()`
+ueber `statusLine()`. Datenbasis: Attribute `LastCycleAt`, `LastMissing`, `LastBusCount`
+(-1 = Adapter nicht erreicht), geschrieben von `recordCycle($raw)` in `Update()`, dazu
+`LastSeenAt` und die Variablen. Fuer NASA wichtig: fehlende Einzelwerte sind hier NORMAL
+(selten gesendete Nachrichten, siehe 0.1.4), deshalb sagt die Zeile ausdruecklich "bleiben auf
+dem letzten Stand" und nennt das laengere Hoerfenster als Abhilfe. Eigene Kopie der Hilfsfunktionen
+(kein geteilter Code mit WPModbusHub -- Module setzen sich nicht gegenseitig voraus).
+
 ## Branch-Modell
 
 `ems-integration` bleibt der aktive Entwicklungsbranch. Seit 18.09.2026 existiert zusätzlich

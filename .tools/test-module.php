@@ -442,6 +442,102 @@ foreach ([
 }
 
 // ---------------------------------------------------------------------------
+echo "Block 8: Statuszeile im Formular (live berechnet, jeder Zustand)\n";
+// ---------------------------------------------------------------------------
+
+function statusOf($module): array
+{
+    $form = json_decode($module->GetConfigurationForm(), true);
+    $label = findFormElement($form['elements'], 'ConnectionStatus');
+    return [$label['caption'] ?? '', $label['color'] ?? null];
+}
+function setAttr($module, string $name, int $value): void
+{
+    $m = new ReflectionMethod($module, 'WriteAttributeInteger');
+    $m->setAccessible(true);
+    $m->invoke($module, $name, $value);
+}
+// Ein Hoerfenster nachstellen: rohe Nachrichten -> Zyklusmerker + Variablen (wie Update()).
+function simulateWindow($module, ?array $raw): void
+{
+    $rc = new ReflectionMethod(SamsungEhs::class, 'recordCycle');
+    $rc->setAccessible(true);
+    $rc->invoke($module, $raw);
+    $values = [];
+    foreach (SamsungEhs::MESSAGES as $msgNum => $def) {
+        if ($raw !== null && array_key_exists($msgNum, $raw)) {
+            $values[$def['ident']] = $raw[$msgNum] / $def['scale'];
+        }
+    }
+    $mv = new ReflectionMethod(SamsungEhs::class, 'maintainDeviceVariables');
+    $mv->setAccessible(true);
+    $mv->invoke($module, $values, count($values) > 0);
+    if (count($values) > 0) {
+        setAttr($module, 'LastSeenAt', time());
+    }
+}
+
+$rawForm = json_decode(file_get_contents(__DIR__ . '/../SamsungEhs/form.json'), true);
+check('form.json: Statuszeile ist nur ein leerer Platzhalter (kein statischer Satz)', (findFormElement($rawForm['elements'], 'ConnectionStatus')['caption'] ?? 'x') === '');
+
+$GLOBALS['ips']['variables'] = [];
+$GLOBALS['ips']['properties']['SAMEHS_Active'] = false;
+$GLOBALS['ips']['properties']['Host'] = '';
+$GLOBALS['ips']['properties']['SAMEHS_Interval'] = 60;
+$GLOBALS['ips']['properties']['ListenSeconds'] = 3;
+$s2 = new SamsungEhs();
+$s2->Create();
+
+[$line, $color] = statusOf($s2);
+check('Inaktiv ohne Host: ℹ️ noch nicht eingerichtet', strpos($line, 'ℹ️ Noch nicht eingerichtet') === 0 && $color === -1, $line);
+$GLOBALS['ips']['properties']['Host'] = '192.168.1.60';
+[$line, $color] = statusOf($s2);
+check('Inaktiv mit Host: ℹ️ Ausgeschaltet', strpos($line, 'ℹ️ Ausgeschaltet') === 0, $line);
+$GLOBALS['ips']['properties']['SAMEHS_Active'] = true;
+$GLOBALS['ips']['properties']['Host'] = '';
+[$line, $color] = statusOf($s2);
+check('Aktiv ohne Host: ⛔ Pflichtangabe fehlt, rot', strpos($line, '⛔ Pflichtangabe fehlt') === 0 && $color === 0xFF0000, $line);
+$GLOBALS['ips']['properties']['Host'] = '192.168.1.60';
+[$line] = statusOf($s2);
+check('Aktiv, noch kein Hörfenster: ℹ️ erstes folgt', strpos($line, 'ℹ️ Noch kein Hörfenster') === 0 && strpos($line, '60 s') !== false, $line);
+
+$all = [0x8204 => 212, 0x4238 => 253, 0x4236 => 247, 0x4237 => 436, 0x4235 => 450, 0x4247 => 320];
+simulateWindow($s2, $all);
+[$line, $color] = statusOf($s2);
+check('Alle sechs gesehen: ✅ mit Zahl und Alter', strpos($line, '✅ ') === 0 && strpos($line, 'alle 6 Werte') !== false && strpos($line, 'vor 0 s') !== false && $color === -1, $line);
+check('Alle sechs gesehen: ✅ nennt die Werte mit Dezimalkomma', strpos($line, 'Außentemperatur 21,2 °C') !== false && strpos($line, 'Warmwasser 43,6 °C') !== false && strpos($line, 'Vorlauf-Soll') !== false, $line);
+
+$partial = $all;
+unset($partial[0x4235], $partial[0x4247]);
+simulateWindow($s2, $partial);
+[$line] = statusOf($s2);
+check('Teilweise gesehen: ⚠️ nennt Zahl und fehlende Werte beim Namen', strpos($line, '⚠️ Bus liefert') === 0 && strpos($line, '2 von 6') !== false && strpos($line, 'Warmwasser Sollwert') !== false && strpos($line, 'Heizzone 1 Solltemperatur') !== false, $line);
+check('Teilweise gesehen: erklärt, dass die Werte auf dem letzten Stand bleiben', strpos($line, 'letzten Stand') !== false && strpos($line, 'Hörfenster') !== false, $line);
+
+simulateWindow($s2, [0x1234 => 5, 0x2345 => 6]);
+[$line] = statusOf($s2);
+check('Nur unbekannte Nachrichten: ⚠️ Adapter erreicht, keine bekannte Nachricht, nennt die Zahl gesehener', strpos($line, '⚠️ Adapter erreicht') === 0 && strpos($line, 'keine der 6') !== false && strpos($line, '2 andere Nachrichten') !== false, $line);
+
+simulateWindow($s2, null);
+[$line] = statusOf($s2);
+check('Adapter nicht erreichbar: ⚠️ mit Hinweis auf gleichzeitige TCP-Verbindungen', strpos($line, '⚠️ Der RS485-Adapter ist nicht erreichbar') === 0 && strpos($line, 'EINE TCP-Verbindung') !== false, $line);
+check('Adapter nicht erreichbar: letzte bekannte Werte bleiben sichtbar', strpos($line, 'Letzte bekannte Werte') !== false && strpos($line, 'Außentemperatur 21,2 °C') !== false, $line);
+
+simulateWindow($s2, $all);
+setAttr($s2, 'LastCycleAt', time() - 1000);
+[$line] = statusOf($s2);
+check('Veraltet: ⚠️ meldet ein viel zu altes Hörfenster', strpos($line, '⚠️ Das letzte Hörfenster liegt') === 0 && strpos($line, 'zurück') !== false, $line);
+
+// Echter Update()-Lauf gegen eine nicht erreichbare Adresse (wie Block 5) landet in der Zeile.
+$s3 = new SamsungEhs();
+$s3->Create();
+$GLOBALS['ips']['properties']['Host'] = '203.0.113.1';
+$GLOBALS['ips']['properties']['ListenSeconds'] = 1;
+$s3->Update();
+[$line] = statusOf($s3);
+check('Update() gegen nicht erreichbare Adresse: Zeile meldet den Adapter als nicht erreichbar', strpos($line, '⚠️ Der RS485-Adapter ist nicht erreichbar') === 0, $line);
+
+// ---------------------------------------------------------------------------
 echo "\n";
 if ($failures === 0) {
     echo "Alle Pruefungen bestanden.\n";

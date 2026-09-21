@@ -38,7 +38,7 @@ require_once __DIR__ . '/libs/NasaBridgeClient.php';
 
 class SamsungEhs extends IPSModule
 {
-    const NEWS_VERSION = '0.1.4';
+    const NEWS_VERSION = '0.2.0';
 
     // Bekannte NASA-Nachrichtennummern -> Ident/Bezeichnung. Alle bisher
     // aufgenommenen Werte sind laut Quelle vorzeichenbehaftete
@@ -67,6 +67,12 @@ class SamsungEhs extends IPSModule
         $this->RegisterAttributeBoolean('PurposeIntroGone', false);
         $this->RegisterAttributeString('SeenNews', '');
         $this->RegisterAttributeInteger('LastSeenAt', 0);
+        // Fuer die Statuszeile im Formular: Zeitpunkt des letzten Hoerfensters (auch
+        // erfolglos), dabei nicht gesehene bekannte Felder (Idents, Komma-getrennt) und
+        // Zahl der verschiedenen Nachrichtennummern auf dem Bus (-1 = Adapter nicht erreicht).
+        $this->RegisterAttributeInteger('LastCycleAt', 0);
+        $this->RegisterAttributeString('LastMissing', '');
+        $this->RegisterAttributeInteger('LastBusCount', 0);
         // Einmalig dismissible Forum-Hinweis (SUITE.md "Einheitliche Formular-
         // Optik", Forumsthread seit 18.09.2026 live), siehe ForumHint().
         $this->RegisterAttributeBoolean('ForumHintGone', false);
@@ -106,6 +112,9 @@ class SamsungEhs extends IPSModule
             'caption' => 'ℹ️ SamsungEhs Version ' . $libraryVersion . ' -- lokale NASA-Protokoll-Anbindung für Samsung-EHS-Wärmepumpen.',
         ]);
 
+        [$statusText, $statusColor] = $this->statusLine();
+        $this->updateFormElement($form['elements'], 'ConnectionStatus', ['caption' => $statusText, 'color' => $statusColor]);
+
         $purposeIntro = $this->PurposeIntro();
         if ($purposeIntro !== null) {
             array_unshift($form['elements'], $purposeIntro);
@@ -117,7 +126,8 @@ class SamsungEhs extends IPSModule
                 'caption'  => '🆕 Neu in Version ' . self::NEWS_VERSION,
                 'expanded' => true,
                 'items'    => [
-                    ['type' => 'Label', 'caption' => '• Hörfenster je Aktualisierung jetzt bis 60s einstellbar (vorher 10s) -- praktisch für die Fehlersuche bei selten gesendeten Werten.'],
+                    ['type' => 'Label', 'caption' => '• Neue Statuszeile im Bereich „NASA-Bus-Zugang“: zeigt live, ob der Adapter erreichbar ist, ob der Bus bekannte Nachrichten liefert, welche Werte im letzten Hörfenster angekommen sind und welche fehlten.'],
+                    ['type' => 'Label', 'caption' => '• Hörfenster je Aktualisierung bis 60s einstellbar (seit 0.1.4) -- praktisch für die Fehlersuche bei selten gesendeten Werten.'],
                     ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckNews($id);'],
                 ],
             ]);
@@ -131,6 +141,122 @@ class SamsungEhs extends IPSModule
         $form['elements'][] = $this->LicenseHint();
 
         return json_encode($form);
+    }
+
+    /**
+     * Merkt sich Ergebnis und Zeitpunkt des letzten Hoerfensters -- Grundlage der
+     * Statuszeile im Formular. $raw = NULL: Adapter nicht erreicht.
+     */
+    private function recordCycle(?array $raw): void
+    {
+        $this->WriteAttributeInteger('LastCycleAt', time());
+        if ($raw === null) {
+            $this->WriteAttributeInteger('LastBusCount', -1);
+            $this->WriteAttributeString('LastMissing', implode(',', array_column(self::MESSAGES, 'ident')));
+            return;
+        }
+        $this->WriteAttributeInteger('LastBusCount', count($raw));
+        $missing = [];
+        foreach (self::MESSAGES as $msgNum => $def) {
+            if (!array_key_exists($msgNum, $raw)) {
+                $missing[] = $def['ident'];
+            }
+        }
+        $this->WriteAttributeString('LastMissing', implode(',', $missing));
+    }
+
+    private function captionOf(string $ident): string
+    {
+        foreach (self::MESSAGES as $def) {
+            if ($def['ident'] === $ident) {
+                return $def['caption'];
+            }
+        }
+        return $ident;
+    }
+
+    private function ageText(int $timestamp): string
+    {
+        $sec = max(0, time() - $timestamp);
+        if ($sec < 120) {
+            return 'vor ' . $sec . ' s';
+        }
+        if ($sec < 7200) {
+            return 'vor ' . intdiv($sec, 60) . ' min';
+        }
+        if ($sec < 172800) {
+            return 'vor ' . intdiv($sec, 3600) . ' h';
+        }
+        return 'vor ' . intdiv($sec, 86400) . ' Tagen';
+    }
+
+    /**
+     * Zuletzt uebernommene Werte als Text, z. B. "Außentemperatur 21,2 °C, ...".
+     * Nur Felder, zu denen schon eine Variable existiert.
+     */
+    private function lastValuesText(): string
+    {
+        $parts = [];
+        foreach (self::MESSAGES as $def) {
+            $id = $this->contractFieldID($def['ident']);
+            if ($id === 0) {
+                continue;
+            }
+            $parts[] = $def['caption'] . ' ' . number_format((float)GetValue($id), 1, ',', '') . ' °C';
+        }
+        return implode(', ', $parts);
+    }
+
+    /**
+     * Statuszeile fuer das Formular (SUITE.md "Verbund-Verbindungen im Formular
+     * sichtbar machen"), live berechnet: [Text, Farbe], Farbe -1 = Standard.
+     */
+    private function statusLine(): array
+    {
+        $active   = $this->ReadPropertyBoolean('SAMEHS_Active');
+        $hasHost  = trim($this->ReadPropertyString('Host')) !== '';
+        $interval = max(30, $this->ReadPropertyInteger('SAMEHS_Interval'));
+        $listen   = max(1, min(60, $this->ReadPropertyInteger('ListenSeconds')));
+
+        if (!$active) {
+            if (!$hasHost) {
+                return ['ℹ️ Noch nicht eingerichtet: keine IP-Adresse des RS485-Adapters eingetragen. Danach „SamsungEhs aktiv“ einschalten und übernehmen.', -1];
+            }
+            return ['ℹ️ Ausgeschaltet -- „SamsungEhs aktiv“ einschalten und übernehmen, dann wird der NASA-Bus abgehört.', -1];
+        }
+        if (!$hasHost) {
+            return ['⛔ Pflichtangabe fehlt: die IP-Adresse des RS485-Adapters.', 0xFF0000];
+        }
+
+        $lastCycle = $this->ReadAttributeInteger('LastCycleAt');
+        if ($lastCycle === 0) {
+            return ['ℹ️ Noch kein Hörfenster gelaufen -- das erste folgt innerhalb von ' . $interval . ' s nach dem Übernehmen.', -1];
+        }
+
+        $lastSeen = $this->ReadAttributeInteger('LastSeenAt');
+        $values = $this->lastValuesText();
+        $knownCount = count(self::MESSAGES);
+        $busCount = $this->ReadAttributeInteger('LastBusCount');
+        $missing = array_filter(explode(',', $this->ReadAttributeString('LastMissing')));
+
+        if ($busCount < 0) {
+            $text = '⚠️ Der RS485-Adapter ist nicht erreichbar (letzter Versuch ' . $this->ageText($lastCycle) . '; letzte Werte ' . ($lastSeen > 0 ? $this->ageText($lastSeen) : 'noch nie') . '). IP-Adresse und Port prüfen. Viele Adapter erlauben nur EINE TCP-Verbindung gleichzeitig -- hängt schon eine andere Anwendung (z. B. Home Assistant) daran?';
+            if ($values !== '') {
+                $text .= ' Letzte bekannte Werte: ' . $values . '.';
+            }
+            return [$text, -1];
+        }
+        if (count($missing) === $knownCount) {
+            return ['⚠️ Adapter erreicht, aber im Hörfenster (' . $listen . ' s) kam keine der ' . $knownCount . ' bekannten NASA-Nachrichten vorbei (' . $busCount . ' andere Nachricht' . ($busCount === 1 ? '' : 'en') . ' gesehen, ' . $this->ageText($lastCycle) . '). Hörfenster verlängern und den Anschluss an F1/F2 prüfen.', -1];
+        }
+        if (time() - $lastCycle > 3 * $interval + $listen + 10) {
+            return ['⚠️ Das letzte Hörfenster liegt ' . str_replace('vor ', '', $this->ageText($lastCycle)) . ' zurück, erwartet wären ' . $interval . ' s -- Timer und Instanzstatus prüfen. Letzte Werte: ' . $values . '.', -1];
+        }
+        if (count($missing) > 0) {
+            $names = array_map(fn($ident) => $this->captionOf($ident), $missing);
+            return ['⚠️ Bus liefert, aber ' . count($names) . ' von ' . $knownCount . ' Werten kamen im letzten Hörfenster (' . $listen . ' s) nicht vorbei: ' . implode(', ', $names) . ' -- sie bleiben auf dem letzten Stand, ein längeres Hörfenster kann helfen. Gesehen ' . $this->ageText($lastCycle) . ': ' . $values . '.', -1];
+        }
+        return ['✅ NASA-Bus wird abgehört, alle ' . $knownCount . ' Werte im Hörfenster gesehen (' . $this->ageText($lastCycle) . '): ' . $values . '.', -1];
     }
 
     private function updateFormElement(array &$items, string $name, array $patch): bool
@@ -248,6 +374,7 @@ class SamsungEhs extends IPSModule
         $seconds = max(1, min(60, $this->ReadPropertyInteger('ListenSeconds')));
         $raw = $client->listen((float)$seconds);
 
+        $this->recordCycle($raw);
         if ($raw === null) {
             $this->maintainDeviceVariables([], false);
             $this->SetStatus(201);

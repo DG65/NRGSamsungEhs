@@ -1,5 +1,9 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.2.0 (Build 6) — 21.09.2026
+
+- **Statuszeile im Formular.** Im Bereich „NASA-Bus-Zugang“ steht jetzt eine live berechnete Zeile (SUITE.md „Verbund-Verbindungen im Formular sichtbar machen“), die sagt, was am Bus tatsächlich ankommt: ✅ alle sechs Werte im Hörfenster gesehen, mit Werten und Alter; ⚠️ Adapter nicht erreichbar (mit Hinweis, dass viele Adapter nur EINE TCP-Verbindung gleichzeitig erlauben, z. B. wenn schon Home Assistant daran hängt), Adapter erreicht aber keine der bekannten Nachrichten gesehen (mit Zahl der übrigen gesehenen Nachrichten), einzelne Werte im letzten Hörfenster nicht vorbeigekommen (beim Namen genannt, sie bleiben auf dem letzten Stand) oder Hörfenster viel zu lange her; ℹ️ ausgeschaltet, nicht eingerichtet oder noch kein Hörfenster gelaufen; ⛔ IP-Adresse fehlt, rot. Damit sieht ein Tester wie zuvor bei den Sollwerten sofort, ob ein längeres Hörfenster hilft, ohne die Debugausgabe zu öffnen. Neu dafür: drei Attribute je Instanz (Zeitpunkt des letzten Hörfensters, nicht gesehene Felder, Zahl der Nachrichtennummern auf dem Bus). Prüfstand +14 Prüfungen, acht Mutationen der Zielstellen gefangen.
+
 ## 0.1.4 (Build 5) — 18.09.2026
 
 - **Hörfenster bis 60s statt bisher 10s.** Auf Wunsch des Testers (Simon, siehe 0.1.3): sein Multi-Client-Adapter-Modus scheiterte (Waveshare interpretiert die Bytes dann fälschlich als Modbus-RTU), er testet jetzt die Fan-out-Route über Home Assistant und wollte währenddessen länger mithören können. `ListenSeconds`-Obergrenze in `Update()` und Formular auf 60s angehoben, Hinweistext ergänzt (mögliche Kollision mit der IPS-eigenen Skript-Ausführungszeit ab ca. 30s, sowie: ein langes Hörfenster verlängert den tatsächlichen Zyklus über das eingestellte Aktualisierungsintervall hinaus).
