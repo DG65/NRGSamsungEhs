@@ -3,8 +3,8 @@
     "author": "DG65",
     "name": "NRG-Stack SamsungEhs",
     "url": "https://github.com/DG65/NRGSamsungEhs",
-    "version": "0.2.0",
-    "build": 6,
+    "version": "0.2.1",
+    "build": 7,
     "date": 1789603200,
     "compatibility": {
         "version": "9.0"

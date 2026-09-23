@@ -87,6 +87,10 @@ function GetValue(int $id)
     }
     return null;
 }
+function IPS_GetLibrary(string $guid): array
+{
+    return ['Version' => $GLOBALS['ips']['libraryVersion'] ?? ''];
+}
 
 class IPSModule
 {
@@ -421,6 +425,32 @@ check('Forum-Knopf-onClick ist ein echo auf den echten Thread-Link', strpos($for
 $mod->AckForumHint();
 $formAfterForumAck = json_decode($mod->GetConfigurationForm(), true);
 check('Forum-Hinweis-Panel verschwindet nach Bestätigen', findFormElement($formAfterForumAck['elements'], 'ForumHintPanel') === null);
+
+// -- NEWS_VERSIONS-Banner (SUITE.md "Einheitliche Formular-Optik" Punkt 1,
+// Dashboard/Dietmar 23.09.2026, EMS-Weitergabe): siehe WPModbusHub-Prüfstand.
+$GLOBALS['ips']['libraryVersion'] = '';
+$newsMod = new SamsungEhs();
+$newsMod->Create();
+$formNews = json_decode($newsMod->GetConfigurationForm(), true);
+$newsPanel = findFormElement($formNews['elements'], 'NewsPanel');
+check('News-Banner erscheint bei leerem SeenNews', $newsPanel !== null && ($newsPanel['caption'] ?? '') === '🆕 Neu bis Version 0.2.0', json_encode($newsPanel['caption'] ?? null));
+
+$GLOBALS['ips']['libraryVersion'] = '0.9.9-beta.3';
+$newsMod->AckNews();
+$seenNews = new ReflectionMethod(SamsungEhs::class, 'ReadAttributeString');
+$seenNews->setAccessible(true);
+check('AckNews() speichert die tatsaechlich installierte BASISVERSION "0.9.9" (Beta-Suffix entfernt, NICHT nur den letzten NEWS_VERSIONS-Schluessel 0.2.0)', $seenNews->invoke($newsMod, 'SeenNews') === '0.9.9', $seenNews->invoke($newsMod, 'SeenNews'));
+$GLOBALS['ips']['libraryVersion'] = '';
+$formNewsGone = json_decode($newsMod->GetConfigurationForm(), true);
+check('News-Banner ist nach AckNews() weg (kein neuerer Eintrag)', findFormElement($formNewsGone['elements'], 'NewsPanel') === null);
+
+$oldNewsMod = new SamsungEhs();
+$oldNewsMod->Create();
+$writeSeenNews = new ReflectionMethod(SamsungEhs::class, 'WriteAttributeString');
+$writeSeenNews->setAccessible(true);
+$writeSeenNews->invoke($oldNewsMod, 'SeenNews', '9.9.9');
+$formFutureNews = json_decode($oldNewsMod->GetConfigurationForm(), true);
+check('Wer scheinbar eine NEUERE Version als jeden Eintrag zuletzt sah, sieht keinen Banner', findFormElement($formFutureNews['elements'], 'NewsPanel') === null);
 
 // ---------------------------------------------------------------------------
 echo "Block 7: Vollstaendigkeit der Methodenaufrufe\n";

@@ -1,5 +1,9 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.2.1 (Build 7) — 23.09.2026
+
+- **"Was ist Neu" auf die verbundweite `NEWS_VERSIONS`-Konvention umgestellt** (Dashboard/Dietmar 23.09.2026, per EMS weitergegeben): zeigt jetzt gezielt nur die Lücke zwischen der zuletzt bestätigten und der gerade installierten Version ("🆕 Neu bis Version X"). Bestätigen merkt sich die tatsächlich installierte Bibliotheksversion, nicht nur den letzten Eintrag-Schlüssel. Rein internes Verhalten, keine Registeränderung.
+
 ## 0.2.0 (Build 6) — 21.09.2026
 
 - **Statuszeile im Formular.** Im Bereich „NASA-Bus-Zugang“ steht jetzt eine live berechnete Zeile (SUITE.md „Verbund-Verbindungen im Formular sichtbar machen“), die sagt, was am Bus tatsächlich ankommt: ✅ alle sechs Werte im Hörfenster gesehen, mit Werten und Alter; ⚠️ Adapter nicht erreichbar (mit Hinweis, dass viele Adapter nur EINE TCP-Verbindung gleichzeitig erlauben, z. B. wenn schon Home Assistant daran hängt), Adapter erreicht aber keine der bekannten Nachrichten gesehen (mit Zahl der übrigen gesehenen Nachrichten), einzelne Werte im letzten Hörfenster nicht vorbeigekommen (beim Namen genannt, sie bleiben auf dem letzten Stand) oder Hörfenster viel zu lange her; ℹ️ ausgeschaltet, nicht eingerichtet oder noch kein Hörfenster gelaufen; ⛔ IP-Adresse fehlt, rot. Damit sieht ein Tester wie zuvor bei den Sollwerten sofort, ob ein längeres Hörfenster hilft, ohne die Debugausgabe zu öffnen. Neu dafür: drei Attribute je Instanz (Zeitpunkt des letzten Hörfensters, nicht gesehene Felder, Zahl der Nachrichtennummern auf dem Bus). Prüfstand +14 Prüfungen, acht Mutationen der Zielstellen gefangen.

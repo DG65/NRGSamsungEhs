@@ -38,7 +38,15 @@ require_once __DIR__ . '/libs/NasaBridgeClient.php';
 
 class SamsungEhs extends IPSModule
 {
-    const NEWS_VERSION = '0.2.0';
+    // Verbund-Konvention "NEWS_VERSIONS" (SUITE.md "Einheitliche Formular-Optik" Punkt 1,
+    // Dashboard/Dietmar 23.09.2026, EMS-Weitergabe) -- siehe WPModbusHub/module.php.
+    const NEWS_VERSIONS = [
+        '0.2.0' => [
+            'Neue Statuszeile im Bereich „NASA-Bus-Zugang“: zeigt live, ob der Adapter erreichbar ist, ob der Bus bekannte Nachrichten liefert, welche Werte im letzten Hörfenster angekommen sind und welche fehlten.',
+            'Hörfenster je Aktualisierung bis 60s einstellbar (seit 0.1.4) -- praktisch für die Fehlersuche bei selten gesendeten Werten.',
+        ],
+    ];
+    private const LIBRARY_GUID = '{3BAE8FBC-ADF3-4BF6-8D3C-F04FAC043121}';
 
     // Bekannte NASA-Nachrichtennummern -> Ident/Bezeichnung. Alle bisher
     // aufgenommenen Werte sind laut Quelle vorzeichenbehaftete
@@ -119,18 +127,9 @@ class SamsungEhs extends IPSModule
         if ($purposeIntro !== null) {
             array_unshift($form['elements'], $purposeIntro);
         }
-        if ($this->ReadAttributeString('SeenNews') !== self::NEWS_VERSION) {
-            array_unshift($form['elements'], [
-                'type'     => 'ExpansionPanel',
-                'name'     => 'NewsPanel',
-                'caption'  => '🆕 Neu in Version ' . self::NEWS_VERSION,
-                'expanded' => true,
-                'items'    => [
-                    ['type' => 'Label', 'caption' => '• Neue Statuszeile im Bereich „NASA-Bus-Zugang“: zeigt live, ob der Adapter erreichbar ist, ob der Bus bekannte Nachrichten liefert, welche Werte im letzten Hörfenster angekommen sind und welche fehlten.'],
-                    ['type' => 'Label', 'caption' => '• Hörfenster je Aktualisierung bis 60s einstellbar (seit 0.1.4) -- praktisch für die Fehlersuche bei selten gesendeten Werten.'],
-                    ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckNews($id);'],
-                ],
-            ]);
+        $newsBanner = $this->newsBanner();
+        if ($newsBanner !== null) {
+            array_unshift($form['elements'], $newsBanner);
         }
 
         $forumHint = $this->ForumHint();
@@ -275,9 +274,49 @@ class SamsungEhs extends IPSModule
         return false;
     }
 
+    /** Siehe WPModbusHub/module.php::BaseVersion(). */
+    private function BaseVersion(string $v): string
+    {
+        return preg_replace('/-.*$/', '', $v) ?? $v;
+    }
+
+    /** Siehe WPModbusHub/module.php::newsBanner(). */
+    private function newsBanner(): ?array
+    {
+        $seen = (string) $this->ReadAttributeString('SeenNews');
+        $pending = [];
+        foreach (self::NEWS_VERSIONS as $ver => $lines) {
+            if ($seen === '' || version_compare($ver, $seen, '>')) {
+                $pending[$ver] = $lines;
+            }
+        }
+        if (count($pending) === 0) {
+            return null;
+        }
+        uksort($pending, 'version_compare');
+        $items = [];
+        $multi = count($pending) > 1;
+        foreach ($pending as $ver => $lines) {
+            if ($multi) {
+                $items[] = ['type' => 'Label', 'caption' => 'Version ' . $ver . ':'];
+            }
+            foreach ($lines as $line) {
+                $items[] = ['type' => 'Label', 'caption' => '• ' . $line];
+            }
+        }
+        $items[] = ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckNews($id);'];
+        $latest = array_key_last($pending);
+        return ['type' => 'ExpansionPanel', 'name' => 'NewsPanel', 'caption' => '🆕 Neu bis Version ' . $latest, 'expanded' => true, 'items' => $items];
+    }
+
     public function AckNews(): void
     {
-        $this->WriteAttributeString('SeenNews', self::NEWS_VERSION);
+        $lib = @IPS_GetLibrary(self::LIBRARY_GUID);
+        $ver = is_array($lib) ? $this->BaseVersion((string) ($lib['Version'] ?? '')) : '';
+        if ($ver === '') {
+            $ver = (string) array_key_last(self::NEWS_VERSIONS);
+        }
+        $this->WriteAttributeString('SeenNews', $ver);
         $this->UpdateFormField('NewsPanel', 'visible', false);
     }
 
