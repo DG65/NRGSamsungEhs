@@ -156,6 +156,11 @@ ueber `statusLine()`. Datenbasis: Attribute `LastCycleAt`, `LastMissing`, `LastB
 dem letzten Stand" und nennt das laengere Hoerfenster als Abhilfe. Eigene Kopie der Hilfsfunktionen
 (kein geteilter Code mit WPModbusHub -- Module setzen sich nicht gegenseitig voraus).
 
+## NEWS_VERSIONS-Umstellung (0.2.1, 23.09.2026)
+
+Siehe WPModbusHub/CLAUDE.md -- gleiche Umstellung, gleiches Muster, eigene Kopie
+(`LIBRARY_GUID = {3BAE8FBC-...}`).
+
 ## Branch-Modell
 
 `ems-integration` bleibt der aktive Entwicklungsbranch. Seit 18.09.2026 existiert zusätzlich
