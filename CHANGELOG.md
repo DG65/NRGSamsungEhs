@@ -1,5 +1,10 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.3.0 (Build 8) — 24.09.2026
+
+- **Neues Feld: Heizzone 2 Ist/Soll.** "Gollum"/Ralf hat zwei Heizkreise und vermisste den zweiten. Aus derselben Nachrichten-Referenz wie die bisherigen sechs Werte identifiziert (VAR_IN_TEMP_ZONE2_F/VAR_IN_TEMP_TARGET_ZONE2_F) und gegen seinen eigenen NASA-Bus-Dump geprüft: 0x42D4 (Heizzone 2 Ist) steht in jedem Zyklus mit plausiblem Wert (~22,8 °C), 0x42D6 (Heizzone 2 Soll) nur in manchen Zyklen (~21,0 °C) -- genau das erwartete Muster Ist-Wert/seltener gesendeter Soll-Wert. Füllt die im NRG-Stack-Vertrag schon vorgesehenen Felder `z2WaterTempID`/`z2WaterTargetTempID`, die bislang immer 0 waren. Noch nicht an Ralfs eigener Anzeige gegengeprüft.
+- Prüfstand: 62 Prüfungen, drei Mutationen der Zielstellen geprüft.
+
 ## 0.2.1 (Build 7) — 23.09.2026
 
 - **"Was ist Neu" auf die verbundweite `NEWS_VERSIONS`-Konvention umgestellt** (Dashboard/Dietmar 23.09.2026, per EMS weitergegeben): zeigt jetzt gezielt nur die Lücke zwischen der zuletzt bestätigten und der gerade installierten Version ("🆕 Neu bis Version X"). Bestätigen merkt sich die tatsächlich installierte Bibliotheksversion, nicht nur den letzten Eintrag-Schlüssel. Rein internes Verhalten, keine Registeränderung.

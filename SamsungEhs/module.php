@@ -45,6 +45,9 @@ class SamsungEhs extends IPSModule
             'Neue Statuszeile im Bereich „NASA-Bus-Zugang“: zeigt live, ob der Adapter erreichbar ist, ob der Bus bekannte Nachrichten liefert, welche Werte im letzten Hörfenster angekommen sind und welche fehlten.',
             'Hörfenster je Aktualisierung bis 60s einstellbar (seit 0.1.4) -- praktisch für die Fehlersuche bei selten gesendeten Werten.',
         ],
+        '0.3.0' => [
+            'Neue Werte „Heizzone 2 Ist“/„Heizzone 2 Soll“ für Anlagen mit zwei Heizkreisen.',
+        ],
     ];
     private const LIBRARY_GUID = '{3BAE8FBC-ADF3-4BF6-8D3C-F04FAC043121}';
 
@@ -60,6 +63,17 @@ class SamsungEhs extends IPSModule
         0x4237 => ['ident' => 'Warmwasser',          'caption' => 'Warmwasser',                  'scale' => 10],
         0x4235 => ['ident' => 'WarmwasserSoll',      'caption' => 'Warmwasser Sollwert',         'scale' => 10],
         0x4247 => ['ident' => 'Zone1Soll',           'caption' => 'Heizzone 1 Solltemperatur (Vorlauf-Soll)', 'scale' => 10],
+        // Heizzone 2 (Forum-Post #8, 23./24.09.2026, "Gollum"/Ralf -- zwei
+        // Heizkreise, zweiter fehlte). Kandidaten aus derselben Nachrichten-
+        // Referenz wie die uebrigen sechs Felder (VAR_IN_TEMP_ZONE2_F/
+        // VAR_IN_TEMP_TARGET_ZONE2_F), an Ralfs eigenem Bus-Dump gegengeprueft:
+        // 0x42D4 steht in JEDEM Zyklus mit plausiblem Wert (~22,8 °C), 0x42D6
+        // nur in manchen Zyklen (~21,0 °C) -- genau das erwartete Muster
+        // Ist-Wert (staendig gesendet) vs. Soll-Wert (seltener), analog zu
+        // WarmwasserSoll/Zone1Soll bei Simons Erstverifikation. Noch NICHT an
+        // Ralfs eigener Anzeige gegengeprueft (Rueckmeldung ausstehend).
+        0x42D4 => ['ident' => 'Zone2Ist',            'caption' => 'Heizzone 2 Isttemperatur', 'scale' => 10],
+        0x42D6 => ['ident' => 'Zone2Soll',           'caption' => 'Heizzone 2 Solltemperatur (Vorlauf-Soll)', 'scale' => 10],
     ];
 
     public function Create()
@@ -510,8 +524,8 @@ class SamsungEhs extends IPSModule
             'outdoorTemperatureID' => $this->contractFieldID('Aussentemperatur'),
             'z1WaterTempID'        => 0,
             'z1WaterTargetTempID'  => $this->contractFieldID('Zone1Soll'),
-            'z2WaterTempID'        => 0,
-            'z2WaterTargetTempID'  => 0,
+            'z2WaterTempID'        => $this->contractFieldID('Zone2Ist'),
+            'z2WaterTargetTempID'  => $this->contractFieldID('Zone2Soll'),
             'dhwTempID'            => $this->contractFieldID('Warmwasser'),
             'dhwTargetTempID'      => $this->contractFieldID('WarmwasserSoll'),
             'mainInletTempID'      => $this->contractFieldID('Ruecklauftemperatur'),

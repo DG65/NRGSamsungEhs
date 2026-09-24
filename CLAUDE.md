@@ -156,6 +156,21 @@ ueber `statusLine()`. Datenbasis: Attribute `LastCycleAt`, `LastMissing`, `LastB
 dem letzten Stand" und nennt das laengere Hoerfenster als Abhilfe. Eigene Kopie der Hilfsfunktionen
 (kein geteilter Code mit WPModbusHub -- Module setzen sich nicht gegenseitig voraus).
 
+## Heizzone 2 nachgerüstet (0.3.0, 24.09.2026)
+
+Forumsnutzer "Gollum"/Ralf (Forum-Post #8, WPHub-Thread hatte ihn zu SamsungEhs geleitet):
+"hat auf Anhieb funktioniert", eigener Waveshare-Adapter war schon an F1/F2. Wunsch: zweiter
+Heizkreis fehlt (er hat zwei). Er hat selbst zwei Kandidaten aus derselben Nachrichten-
+Referenz identifiziert (Screenshot einer Nachrichtentabelle: 0x42D4 "VAR_IN_TEMP_ZONE2_F",
+0x42D6 "VAR_IN_TEMP_TARGET_ZONE2_F") und einen eigenen NASA-Bus-Dump (dump.txt, 3 Zyklen)
+mitgeschickt. Gegenprobe im Dump: 0x42D4=228 in JEDEM Zyklus (Ist-Wert-Muster), 0x42D6=210
+nur in 2 von 3 Zyklen (Soll-Wert-Muster, seltener gesendet -- exakt das Verhalten, das
+WarmwasserSoll/Zone1Soll bei Simons Erstverifikation zeigten). Als `Zone2Ist`/`Zone2Soll`
+in `MESSAGES` aufgenommen, fuellt die seit Vertragsbeginn vorgesehenen, bis dahin immer
+0 gebliebenen Felder `z2WaterTempID`/`z2WaterTargetTempID`. **Noch NICHT an Ralfs eigener
+Live-Anzeige gegengeprueft** (nur am Dump), Rueckmeldung dazu steht aus -- gleiche
+Vorsicht wie bei jeder neuen Nachrichtennummer vor der ersten echten Bestaetigung.
+
 ## NEWS_VERSIONS-Umstellung (0.2.1, 23.09.2026)
 
 Siehe WPModbusHub/CLAUDE.md -- gleiche Umstellung, gleiches Muster, eigene Kopie

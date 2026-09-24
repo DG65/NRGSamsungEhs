@@ -348,6 +348,16 @@ check('GetFunctions(): outsideTempID zeigt auf die echte Variable', ($functions[
 check('GetFunctions(): mainInletTempID zeigt auf Ruecklauftemperatur', ($functions[0]['mainInletTempID'] ?? 0) === $GLOBALS['ips']['variables']['Ruecklauftemperatur']['id']);
 check('GetFunctions(): dhwTempID = 0 (Warmwasser in diesem Zyklus nicht gesehen)', ($functions[0]['dhwTempID'] ?? -1) === 0);
 check('GetFunctions(): reachable = true', ($functions[0]['reachable'] ?? null) === true);
+check('GetFunctions(): z2WaterTempID/z2WaterTargetTempID = 0, solange Heizzone 2 nicht gesehen', ($functions[0]['z2WaterTempID'] ?? -1) === 0 && ($functions[0]['z2WaterTargetTempID'] ?? -1) === 0);
+
+$maintainVars->invoke($mod, [
+    'Aussentemperatur' => 7.5,
+    'Zone2Ist'          => 22.8,
+    'Zone2Soll'         => 21.0,
+], true);
+check('Heizzone 2: Ist/Soll-Variablen angelegt und korrekt (Forum-Post #8, "Gollum"/Ralf)', ($GLOBALS['ips']['variables']['Zone2Ist']['value'] ?? null) === 22.8 && ($GLOBALS['ips']['variables']['Zone2Soll']['value'] ?? null) === 21.0);
+$functionsZone2 = $mod->GetFunctions();
+check('GetFunctions(): z2WaterTempID/z2WaterTargetTempID zeigen jetzt auf Heizzone 2', ($functionsZone2[0]['z2WaterTempID'] ?? 0) === $GLOBALS['ips']['variables']['Zone2Ist']['id'] && ($functionsZone2[0]['z2WaterTargetTempID'] ?? 0) === $GLOBALS['ips']['variables']['Zone2Soll']['id']);
 
 $maintainVars->invoke($mod, [], false);
 check('Nicht erreichbar: Erreichbar-Variable false', ($GLOBALS['ips']['variables']['Erreichbar']['value'] ?? null) === false);
@@ -433,7 +443,7 @@ $newsMod = new SamsungEhs();
 $newsMod->Create();
 $formNews = json_decode($newsMod->GetConfigurationForm(), true);
 $newsPanel = findFormElement($formNews['elements'], 'NewsPanel');
-check('News-Banner erscheint bei leerem SeenNews', $newsPanel !== null && ($newsPanel['caption'] ?? '') === '🆕 Neu bis Version 0.2.0', json_encode($newsPanel['caption'] ?? null));
+check('News-Banner erscheint bei leerem SeenNews', $newsPanel !== null && ($newsPanel['caption'] ?? '') === '🆕 Neu bis Version 0.3.0', json_encode($newsPanel['caption'] ?? null));
 
 $GLOBALS['ips']['libraryVersion'] = '0.9.9-beta.3';
 $newsMod->AckNews();
@@ -531,22 +541,22 @@ $GLOBALS['ips']['properties']['Host'] = '192.168.1.60';
 [$line] = statusOf($s2);
 check('Aktiv, noch kein Hörfenster: ℹ️ erstes folgt', strpos($line, 'ℹ️ Noch kein Hörfenster') === 0 && strpos($line, '60 s') !== false, $line);
 
-$all = [0x8204 => 212, 0x4238 => 253, 0x4236 => 247, 0x4237 => 436, 0x4235 => 450, 0x4247 => 320];
+$all = [0x8204 => 212, 0x4238 => 253, 0x4236 => 247, 0x4237 => 436, 0x4235 => 450, 0x4247 => 320, 0x42D4 => 228, 0x42D6 => 210];
 simulateWindow($s2, $all);
 [$line, $color] = statusOf($s2);
-check('Alle sechs gesehen: ✅ mit Zahl und Alter', strpos($line, '✅ ') === 0 && strpos($line, 'alle 6 Werte') !== false && strpos($line, 'vor 0 s') !== false && $color === -1, $line);
-check('Alle sechs gesehen: ✅ nennt die Werte mit Dezimalkomma', strpos($line, 'Außentemperatur 21,2 °C') !== false && strpos($line, 'Warmwasser 43,6 °C') !== false && strpos($line, 'Vorlauf-Soll') !== false, $line);
+check('Alle acht gesehen: ✅ mit Zahl und Alter', strpos($line, '✅ ') === 0 && strpos($line, 'alle 8 Werte') !== false && strpos($line, 'vor 0 s') !== false && $color === -1, $line);
+check('Alle acht gesehen: ✅ nennt die Werte mit Dezimalkomma, auch Heizzone 2', strpos($line, 'Außentemperatur 21,2 °C') !== false && strpos($line, 'Warmwasser 43,6 °C') !== false && strpos($line, 'Vorlauf-Soll') !== false && strpos($line, 'Heizzone 2 Isttemperatur 22,8 °C') !== false && strpos($line, 'Heizzone 2 Solltemperatur') !== false, $line);
 
 $partial = $all;
 unset($partial[0x4235], $partial[0x4247]);
 simulateWindow($s2, $partial);
 [$line] = statusOf($s2);
-check('Teilweise gesehen: ⚠️ nennt Zahl und fehlende Werte beim Namen', strpos($line, '⚠️ Bus liefert') === 0 && strpos($line, '2 von 6') !== false && strpos($line, 'Warmwasser Sollwert') !== false && strpos($line, 'Heizzone 1 Solltemperatur') !== false, $line);
+check('Teilweise gesehen: ⚠️ nennt Zahl und fehlende Werte beim Namen', strpos($line, '⚠️ Bus liefert') === 0 && strpos($line, '2 von 8') !== false && strpos($line, 'Warmwasser Sollwert') !== false && strpos($line, 'Heizzone 1 Solltemperatur') !== false, $line);
 check('Teilweise gesehen: erklärt, dass die Werte auf dem letzten Stand bleiben', strpos($line, 'letzten Stand') !== false && strpos($line, 'Hörfenster') !== false, $line);
 
 simulateWindow($s2, [0x1234 => 5, 0x2345 => 6]);
 [$line] = statusOf($s2);
-check('Nur unbekannte Nachrichten: ⚠️ Adapter erreicht, keine bekannte Nachricht, nennt die Zahl gesehener', strpos($line, '⚠️ Adapter erreicht') === 0 && strpos($line, 'keine der 6') !== false && strpos($line, '2 andere Nachrichten') !== false, $line);
+check('Nur unbekannte Nachrichten: ⚠️ Adapter erreicht, keine bekannte Nachricht, nennt die Zahl gesehener', strpos($line, '⚠️ Adapter erreicht') === 0 && strpos($line, 'keine der 8') !== false && strpos($line, '2 andere Nachrichten') !== false, $line);
 
 simulateWindow($s2, null);
 [$line] = statusOf($s2);
