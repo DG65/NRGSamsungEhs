@@ -171,6 +171,17 @@ in `MESSAGES` aufgenommen, fuellt die seit Vertragsbeginn vorgesehenen, bis dahi
 Live-Anzeige gegengeprueft** (nur am Dump), Rueckmeldung dazu steht aus -- gleiche
 Vorsicht wie bei jeder neuen Nachrichtennummer vor der ersten echten Bestaetigung.
 
+## Ralfs Live-Bestaetigung + offene Frage zu Zone1/Zone2 Soll (Forum-Post #10, 25.09.2026)
+
+Ralf (Gollum) hat 0.3.0 installiert: "die Werte sehen sehr gut aus", ausser Heizzone 1
+und Heizzone 2 Solltemperatur (Vorlauf-Soll, 0x4247/0x42D6) -- die sieht er so NICHT auf
+seinen Bedienteilen. Vermutung (seine, plausibel): das sind intern vom Automatik-
+Heizkurven-Modus ERRECHNETE Werte (er faehrt "Automatik Heizkurven Modus", Heizfunktion
+aktuell AUS), nicht der am Bedienteil eingestellte fixe Sollwert -- passt zur Bedeutung der
+NASA-Nachrichten (Systemsollwert, nicht Nutzereingabe). Kein Bug, eher eine Praezisierung
+der Feldbedeutung. Ralf vergleicht erneut, sobald die Heizung wirklich laeuft -- Rueckmeldung
+steht aus, Captions bewusst noch NICHT umbenannt, bis klar ist, was er tatsaechlich sieht.
+
 ## NEWS_VERSIONS-Umstellung (0.2.1, 23.09.2026)
 
 Siehe WPModbusHub/CLAUDE.md -- gleiche Umstellung, gleiches Muster, eigene Kopie
