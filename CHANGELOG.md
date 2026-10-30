@@ -1,5 +1,10 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.3.1 (Build 9) — 30.10.2026
+
+- **Symcon-Review: Logging nur noch auf ausdrücklichen Klick.** Das Modul hat bisher für seine Messwerte automatisch das Logging im Symcon-Archiv eingeschaltet, ohne den Nutzer zu fragen. Das ist entfernt. Im Bereich „Allgemein“ steht jetzt ein Hinweis und der Knopf „📈 Logging für die Messwerte einschalten“ (SAMEHS_EnableArchiving()). Er schaltet das Logging für alle Messwerte (Fließkomma-Variablen) dieser Instanz ein, nie etwas aus, und meldet, für wie viele Werte er es getan hat. Schon eingeschaltetes Logging bleibt bestehen.
+- Prüfstand: neue Prüfungen (nichts wird automatisch archiviert, Klick schaltet nur Messwerte ein, zweiter Klick, kein Archiv, keine Messwerte, Knopf im Formular), drei Mutationen der Zielstellen gefangen.
+
 ## 0.3.0 (Build 8) — 24.09.2026
 
 - **Neues Feld: Heizzone 2 Ist/Soll.** "Gollum"/Ralf hat zwei Heizkreise und vermisste den zweiten. Aus derselben Nachrichten-Referenz wie die bisherigen sechs Werte identifiziert (VAR_IN_TEMP_ZONE2_F/VAR_IN_TEMP_TARGET_ZONE2_F) und gegen seinen eigenen NASA-Bus-Dump geprüft: 0x42D4 (Heizzone 2 Ist) steht in jedem Zyklus mit plausiblem Wert (~22,8 °C), 0x42D6 (Heizzone 2 Soll) nur in manchen Zyklen (~21,0 °C) -- genau das erwartete Muster Ist-Wert/seltener gesendeter Soll-Wert. Füllt die im NRG-Stack-Vertrag schon vorgesehenen Felder `z2WaterTempID`/`z2WaterTargetTempID`, die bislang immer 0 waren. Noch nicht an Ralfs eigener Anzeige gegengeprüft.

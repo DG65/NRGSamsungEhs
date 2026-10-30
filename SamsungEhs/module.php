@@ -48,6 +48,9 @@ class SamsungEhs extends IPSModule
         '0.3.0' => [
             'Neue Werte „Heizzone 2 Ist“/„Heizzone 2 Soll“ für Anlagen mit zwei Heizkreisen.',
         ],
+        '0.3.1' => [
+            'Das Logging im Symcon-Archiv wird nicht mehr von selbst eingeschaltet. Im Bereich „Allgemein“ gibt es dafür den Knopf „Logging für die Messwerte einschalten“, damit du es bewusst aktivierst (Symcon-Review). Bereits eingeschaltetes Logging bleibt unangetastet.',
+        ],
     ];
     private const LIBRARY_GUID = '{3BAE8FBC-ADF3-4BF6-8D3C-F04FAC043121}';
 
@@ -477,28 +480,47 @@ class SamsungEhs extends IPSModule
                 continue;
             }
             $this->MaintainVariable($ident, $def['caption'], VARIABLETYPE_FLOAT, 'NRG.Celsius', $pos++, true);
-            $this->ensureArchived($ident);
             $this->SetValue($ident, (float)$values[$ident]);
         }
     }
 
-    private function ensureArchived(string $ident): void
+    /**
+     * Schaltet das Logging im Symcon-Archiv fuer die Messwerte (Fliesskomma-
+     * Variablen) dieser Instanz ein -- AUSSCHLIESSLICH auf Klick im Formular.
+     * Symcon-Review 30.10.2026: ein Modul darf Variablen nicht von selbst
+     * archivieren, der Nutzer muss das bewusst einschalten. Schaltet nie etwas
+     * aus, was schon laeuft.
+     */
+    public function EnableArchiving(): string
     {
-        $id = @$this->GetIDForIdent($ident);
-        if ($id === false) {
-            return;
-        }
-        $archiveIDs = @IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}');
-        if (!is_array($archiveIDs) || count($archiveIDs) === 0) {
-            return;
-        }
         try {
-            if (!AC_GetLoggingStatus($archiveIDs[0], $id)) {
-                AC_SetLoggingStatus($archiveIDs[0], $id, true);
-                IPS_ApplyChanges($archiveIDs[0]);
+            $archiveIDs = @IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}');
+            if (!is_array($archiveIDs) || count($archiveIDs) === 0) {
+                return '❌ Keine Archiv-Instanz gefunden -- das Logging kann nicht eingeschaltet werden.';
             }
+            $archiveID = (int)$archiveIDs[0];
+            $new = 0;
+            $already = 0;
+            foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
+                if (IPS_GetObject($id)['ObjectType'] !== OBJECTTYPE_VARIABLE || IPS_GetVariable($id)['VariableType'] !== VARIABLETYPE_FLOAT) {
+                    continue;
+                }
+                if (AC_GetLoggingStatus($archiveID, $id)) {
+                    $already++;
+                    continue;
+                }
+                AC_SetLoggingStatus($archiveID, $id, true);
+                $new++;
+            }
+            if ($new > 0) {
+                IPS_ApplyChanges($archiveID);
+            }
+            if ($new === 0 && $already === 0) {
+                return 'ℹ️ Noch keine Messwerte vorhanden -- erst einen Abruf abwarten und dann erneut klicken.';
+            }
+            return '✅ Logging eingeschaltet für ' . $new . ' Messwert(e)' . ($already > 0 ? ' (' . $already . ' waren schon eingeschaltet)' : '') . '.';
         } catch (\Throwable $e) {
-            // Archivierung ist ein Komfortfeature, kein Zyklus-Abbruch wert.
+            return '❌ Logging konnte nicht eingeschaltet werden: ' . $e->getMessage();
         }
     }
 

@@ -198,3 +198,13 @@ nicht.
 ## Verbund-Manifest SUITE.md
 
 Lokal unter `/Users/dietmar/Nextcloud/Claude/SUITE.md`, kein GitHub-Remote.
+
+## Logging nur auf Klick (Symcon-Review 30.10.2026)
+
+Symcon-Review (SamsungEhs und WPBsbLan): Das Modul hatte für seine Messwerte automatisch
+das Logging im Archiv eingeschaltet (`ensureArchived()` im Variablen-Zyklus). Entfernt.
+Stattdessen gibt es die öffentliche Funktion `EnableArchiving(): string` mit Knopf in „Allgemein“,
+die das Logging für alle Fließkomma-Variablen der Instanz einschaltet, nie etwas ausschaltet und
+das Ergebnis im Klartext zurückgibt. Schon eingeschaltetes Logging bleibt bei Bestandsinstanzen
+bestehen. Gleiches Muster in allen vier WP-Modulen (WPHub, WPModbusHub samt Gateway, WPBsbLan,
+SamsungEhs). Neue Module: nie `AC_SetLoggingStatus()` ohne Nutzerklick aufrufen.

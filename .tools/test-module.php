@@ -60,6 +60,9 @@ function IPS_SetVariableProfileDigits(string $name, int $digits): void
 const TEST_ARCHIVE_INSTANCE_ID = 55555;
 function IPS_GetInstanceListByModuleID(string $moduleID): array
 {
+    if (!empty($GLOBALS['ips']['noArchive'])) {
+        return [];
+    }
     if ($moduleID === '{43192F0B-135B-4CE7-A0A7-1475603F3060}') {
         return [TEST_ARCHIVE_INSTANCE_ID];
     }
@@ -73,6 +76,24 @@ function AC_SetLoggingStatus(int $archiveID, int $variableID, bool $active): boo
 {
     $GLOBALS['ips']['archived'][$variableID] = $active;
     return true;
+}
+const OBJECTTYPE_VARIABLE = 2;
+function IPS_GetChildrenIDs(int $id): array
+{
+    return array_map(fn ($v) => $v['id'], array_values($GLOBALS['ips']['variables']));
+}
+function IPS_GetObject(int $id): array
+{
+    return ['ObjectType' => OBJECTTYPE_VARIABLE];
+}
+function IPS_GetVariable(int $id): array
+{
+    foreach ($GLOBALS['ips']['variables'] as $v) {
+        if ($v['id'] === $id) {
+            return ['VariableType' => $v['type']];
+        }
+    }
+    return ['VariableType' => -1];
 }
 function IPS_ApplyChanges(int $id): void
 {
@@ -443,7 +464,7 @@ $newsMod = new SamsungEhs();
 $newsMod->Create();
 $formNews = json_decode($newsMod->GetConfigurationForm(), true);
 $newsPanel = findFormElement($formNews['elements'], 'NewsPanel');
-check('News-Banner erscheint bei leerem SeenNews', $newsPanel !== null && ($newsPanel['caption'] ?? '') === '🆕 Neu bis Version 0.3.0', json_encode($newsPanel['caption'] ?? null));
+check('News-Banner erscheint bei leerem SeenNews', $newsPanel !== null && ($newsPanel['caption'] ?? '') === '🆕 Neu bis Version 0.3.1', json_encode($newsPanel['caption'] ?? null));
 
 $GLOBALS['ips']['libraryVersion'] = '0.9.9-beta.3';
 $newsMod->AckNews();
@@ -461,6 +482,48 @@ $writeSeenNews->setAccessible(true);
 $writeSeenNews->invoke($oldNewsMod, 'SeenNews', '9.9.9');
 $formFutureNews = json_decode($oldNewsMod->GetConfigurationForm(), true);
 check('Wer scheinbar eine NEUERE Version als jeden Eintrag zuletzt sah, sieht keinen Banner', findFormElement($formFutureNews['elements'], 'NewsPanel') === null);
+
+// ---------------------------------------------------------------------------
+echo "Block 9: Logging nur auf Klick (Symcon-Review 30.10.2026)\n";
+// ---------------------------------------------------------------------------
+// Das Modul darf Variablen nicht von selbst archivieren -- nur ueber den
+// Formular-Knopf, den der Nutzer bewusst klickt.
+$floatIds = [];
+$otherIds = [];
+foreach ($GLOBALS['ips']['variables'] as $v) {
+    if ($v['type'] === VARIABLETYPE_FLOAT) {
+        $floatIds[] = $v['id'];
+    } else {
+        $otherIds[] = $v['id'];
+    }
+}
+check('Logging: Testbasis hat Messwert-Variablen', count($floatIds) > 0, (string)count($floatIds));
+check('Logging: nach allen Update-Zyklen ist NICHTS automatisch archiviert', array_filter($GLOBALS['ips']['archived'] ?? []) === []);
+$enableText = $mod->EnableArchiving();
+check('Logging: Klick schaltet alle Messwerte ein', count(array_filter($floatIds, fn ($id) => ($GLOBALS['ips']['archived'][$id] ?? false) === true)) === count($floatIds));
+check('Logging: Klick fasst Status-/Schaltvariablen nicht an', count(array_filter($otherIds, fn ($id) => ($GLOBALS['ips']['archived'][$id] ?? false) === true)) === 0);
+check('Logging: Rueckmeldung nennt die Zahl der Messwerte', strpos($enableText, '✅') === 0 && strpos($enableText, 'für ' . count($floatIds) . ' Messwert') !== false, $enableText);
+$enableAgain = $mod->EnableArchiving();
+check('Logging: zweiter Klick meldet "schon eingeschaltet" und schaltet nichts doppelt', strpos($enableAgain, 'für 0 Messwert') !== false && strpos($enableAgain, 'waren schon eingeschaltet') !== false, $enableAgain);
+$GLOBALS['ips']['noArchive'] = true;
+check('Logging: ohne Archiv-Instanz klare Fehlermeldung', strpos($mod->EnableArchiving(), '❌') === 0);
+unset($GLOBALS['ips']['noArchive']);
+$savedVars = $GLOBALS['ips']['variables'];
+$GLOBALS['ips']['variables'] = [];
+check('Logging: ohne Messwerte ein Hinweis statt Erfolgsmeldung', strpos($mod->EnableArchiving(), 'ℹ️') === 0);
+$GLOBALS['ips']['variables'] = $savedVars;
+$formJson = json_decode(file_get_contents(__DIR__ . '/../SamsungEhs/form.json'), true);
+$archButton = null;
+foreach ($formJson['elements'] as $el) {
+    if (($el['name'] ?? null) === 'GeneralPanel') {
+        foreach ($el['items'] as $it) {
+            if (($it['type'] ?? '') === 'Button' && strpos($it['onClick'] ?? '', 'SAMEHS_EnableArchiving($id)') !== false) {
+                $archButton = $it;
+            }
+        }
+    }
+}
+check('Logging: Formular bietet den Knopf im Bereich Allgemein an', $archButton !== null);
 
 // ---------------------------------------------------------------------------
 echo "Block 7: Vollstaendigkeit der Methodenaufrufe\n";
