@@ -6,7 +6,8 @@
     "vendor": "Samsung",
     "aliases": [
         "NRG-Stack SamsungEhs",
-        "Samsung EHS (NASA-Protokoll)"
+        "Samsung EHS (NASA-Protokoll)",
+        "Samsung EHS (NASA protocol)"
     ],
     "parentRequirements": [],
     "childRequirements": [],

@@ -208,3 +208,14 @@ die das Logging für alle Fließkomma-Variablen der Instanz einschaltet, nie etw
 das Ergebnis im Klartext zurückgibt. Schon eingeschaltetes Logging bleibt bei Bestandsinstanzen
 bestehen. Gleiches Muster in allen vier WP-Modulen (WPHub, WPModbusHub samt Gateway, WPBsbLan,
 SamsungEhs). Neue Module: nie `AC_SetLoggingStatus()` ohne Nutzerklick aufrufen.
+
+## Zweisprachig Deutsch/Englisch (0.4.0, 05.11.2026)
+
+Auftrag Dietmar („Ja und ja“, 05.11.2026) und EMS-Rundschreiben (SUITE.md Konvention 9). Umbau nach dem Muster WPModbusHub 0.8.0:
+Quelltexte englisch (Code, `form.json`), Deutsch in `SamsungEhs/locale.json` (ein Modulordner, keine Kopie nötig), `SamsungEhs/libs/SAMEHS_Text.php`
+(`t()`, `zahl()`, `formular()`, `mitMerkliste`: Symcon wird je Text höchstens einmal je Prozess gefragt, kein eigenes Lesen der locale.json,
+SUITE.md Stolperstein 24). `MESSAGES[..]['caption']` und `NEWS_VERSIONS` sind englische Quelltexte, übersetzt wird erst beim Anzeigen; Idents
+(`Aussentemperatur` …), Properties, Attribute und `SAMEHS_*`-Funktionen bleiben. Neue Texte: englisch in Code/`form.json`, deutsche Fassung in
+`locale.json`, Prüfstand Block 10 (Vollständigkeit, Platzhalter inkl. Positionsplatzhalter `%2$d`, keine Verwaisten, englisches Formular ohne
+deutsche Reste, Translate()-Aufrufe nach dem ersten Mal 0). Variablennamen bestehender Variablen werden nicht angefasst. Nicht live in beiden
+Sprachen gesehen (Symcon-Option Locale).

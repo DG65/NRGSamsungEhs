@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/libs/SAMEHS_Text.php';
 require_once __DIR__ . '/libs/NasaBridgeClient.php';
 
 // NRG-Stack SamsungEhs -- lokale Anbindung von Samsung-EHS-Waermepumpen
@@ -40,32 +41,37 @@ class SamsungEhs extends IPSModule
 {
     // Verbund-Konvention "NEWS_VERSIONS" (SUITE.md "Einheitliche Formular-Optik" Punkt 1,
     // Dashboard/Dietmar 23.09.2026, EMS-Weitergabe) -- siehe WPModbusHub/module.php.
+    // Die Zeilen sind englische Quelltexte, die deutsche Fassung steht in locale.json.
     const NEWS_VERSIONS = [
         '0.2.0' => [
-            'Neue Statuszeile im Bereich „NASA-Bus-Zugang“: zeigt live, ob der Adapter erreichbar ist, ob der Bus bekannte Nachrichten liefert, welche Werte im letzten Hörfenster angekommen sind und welche fehlten.',
-            'Hörfenster je Aktualisierung bis 60s einstellbar (seit 0.1.4) -- praktisch für die Fehlersuche bei selten gesendeten Werten.',
+            'New status line in the "NASA bus access" section: it shows live whether the adapter is reachable, whether the bus delivers known messages, which values arrived in the last listening window and which were missing.',
+            'The listening window per update can be set up to 60 s (since 0.1.4) -- handy for troubleshooting rarely sent values.',
         ],
         '0.3.0' => [
-            'Neue Werte „Heizzone 2 Ist“/„Heizzone 2 Soll“ für Anlagen mit zwei Heizkreisen.',
+            'New values "Heating zone 2 actual"/"Heating zone 2 target" for systems with two heating circuits.',
         ],
         '0.3.1' => [
-            'Das Logging im Symcon-Archiv wird nicht mehr von selbst eingeschaltet. Im Bereich „Allgemein“ gibt es dafür den Knopf „Logging für die Messwerte einschalten“, damit du es bewusst aktivierst (Symcon-Review). Bereits eingeschaltetes Logging bleibt unangetastet.',
+            'Logging in the Symcon archive is no longer switched on automatically. In the "General" section there is the button "Enable logging for the measured values", so you enable it deliberately (Symcon review). Logging that is already enabled stays untouched.',
+        ],
+        '0.4.0' => [
+            'The module is now fully bilingual (German/English): form, status messages, notes and the names of new variables follow the Symcon language. Existing variables and all settings stay as they are.',
         ],
     ];
     private const LIBRARY_GUID = '{3BAE8FBC-ADF3-4BF6-8D3C-F04FAC043121}';
 
-    // Bekannte NASA-Nachrichtennummern -> Ident/Bezeichnung. Alle bisher
+    // Bekannte NASA-Nachrichtennummern -> Ident/Bezeichnung ('caption' ist ein englischer Quelltext,
+    // uebersetzt wird erst beim Anzeigen). Alle bisher
     // aufgenommenen Werte sind laut Quelle vorzeichenbehaftete
     // 2-Byte-Werte mit Faktor 10 ("arithmetic: value / 10"). Bewusst NUR
     // Felder aufgenommen, deren Ist/Soll-Richtung in der Quelle eindeutig
     // war.
     const MESSAGES = [
-        0x8204 => ['ident' => 'Aussentemperatur',    'caption' => 'Außentemperatur',            'scale' => 10],
-        0x4238 => ['ident' => 'Vorlauftemperatur',   'caption' => 'Vorlauftemperatur',           'scale' => 10],
-        0x4236 => ['ident' => 'Ruecklauftemperatur', 'caption' => 'Rücklauftemperatur',          'scale' => 10],
-        0x4237 => ['ident' => 'Warmwasser',          'caption' => 'Warmwasser',                  'scale' => 10],
-        0x4235 => ['ident' => 'WarmwasserSoll',      'caption' => 'Warmwasser Sollwert',         'scale' => 10],
-        0x4247 => ['ident' => 'Zone1Soll',           'caption' => 'Heizzone 1 Solltemperatur (Vorlauf-Soll)', 'scale' => 10],
+        0x8204 => ['ident' => 'Aussentemperatur',    'caption' => 'Outdoor temperature',            'scale' => 10],
+        0x4238 => ['ident' => 'Vorlauftemperatur',   'caption' => 'Flow temperature',           'scale' => 10],
+        0x4236 => ['ident' => 'Ruecklauftemperatur', 'caption' => 'Return temperature',          'scale' => 10],
+        0x4237 => ['ident' => 'Warmwasser',          'caption' => 'Hot water',                  'scale' => 10],
+        0x4235 => ['ident' => 'WarmwasserSoll',      'caption' => 'Hot water setpoint',         'scale' => 10],
+        0x4247 => ['ident' => 'Zone1Soll',           'caption' => 'Heating zone 1 target temperature (flow setpoint)', 'scale' => 10],
         // Heizzone 2 (Forum-Post #8, 23./24.09.2026, "Gollum"/Ralf -- zwei
         // Heizkreise, zweiter fehlte). Kandidaten aus derselben Nachrichten-
         // Referenz wie die uebrigen sechs Felder (VAR_IN_TEMP_ZONE2_F/
@@ -75,9 +81,19 @@ class SamsungEhs extends IPSModule
         // Ist-Wert (staendig gesendet) vs. Soll-Wert (seltener), analog zu
         // WarmwasserSoll/Zone1Soll bei Simons Erstverifikation. Noch NICHT an
         // Ralfs eigener Anzeige gegengeprueft (Rueckmeldung ausstehend).
-        0x42D4 => ['ident' => 'Zone2Ist',            'caption' => 'Heizzone 2 Isttemperatur', 'scale' => 10],
-        0x42D6 => ['ident' => 'Zone2Soll',           'caption' => 'Heizzone 2 Solltemperatur (Vorlauf-Soll)', 'scale' => 10],
+        0x42D4 => ['ident' => 'Zone2Ist',            'caption' => 'Heating zone 2 actual temperature', 'scale' => 10],
+        0x42D6 => ['ident' => 'Zone2Soll',           'caption' => 'Heating zone 2 target temperature (flow setpoint)', 'scale' => 10],
     ];
+
+    public function __construct($InstanceID)
+    {
+        parent::__construct($InstanceID);
+        // Client und Statuszeile uebersetzen ueber SAMEHS_Text (englische Quelltexte, Deutsch in locale.json); jeder
+        // Text fragt Symcon hoechstens einmal je Prozess (SUITE.md Stolperstein 24).
+        SAMEHS_Text::setzen(SAMEHS_Text::mitMerkliste(function (string $text): string {
+            return $this->Translate($text);
+        }));
+    }
 
     public function Create()
     {
@@ -129,12 +145,14 @@ class SamsungEhs extends IPSModule
 
     public function GetConfigurationForm()
     {
-        $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
+        // Formulartexte der form.json sind englische Quelltexte; die dynamisch gebauten Teile unten
+        // uebersetzen sich selbst (nicht doppelt uebersetzen).
+        $form = SAMEHS_Text::formular(json_decode(file_get_contents(__DIR__ . '/form.json'), true));
 
         $libraryInfo = @json_decode((string)@file_get_contents(__DIR__ . '/../library.json'), true);
         $libraryVersion = (is_array($libraryInfo) && isset($libraryInfo['version'])) ? (string)$libraryInfo['version'] : '?';
         $this->updateFormElement($form['elements'], 'VersionInfo', [
-            'caption' => 'ℹ️ SamsungEhs Version ' . $libraryVersion . ' -- lokale NASA-Protokoll-Anbindung für Samsung-EHS-Wärmepumpen.',
+            'caption' => SAMEHS_Text::t('ℹ️ SamsungEhs version %s -- local NASA protocol connection for Samsung EHS heat pumps.', $libraryVersion),
         ]);
 
         [$statusText, $statusColor] = $this->statusLine();
@@ -185,7 +203,7 @@ class SamsungEhs extends IPSModule
     {
         foreach (self::MESSAGES as $def) {
             if ($def['ident'] === $ident) {
-                return $def['caption'];
+                return SAMEHS_Text::t($def['caption']);
             }
         }
         return $ident;
@@ -195,15 +213,15 @@ class SamsungEhs extends IPSModule
     {
         $sec = max(0, time() - $timestamp);
         if ($sec < 120) {
-            return 'vor ' . $sec . ' s';
+            return SAMEHS_Text::t('%d s ago', $sec);
         }
         if ($sec < 7200) {
-            return 'vor ' . intdiv($sec, 60) . ' min';
+            return SAMEHS_Text::t('%d min ago', intdiv($sec, 60));
         }
         if ($sec < 172800) {
-            return 'vor ' . intdiv($sec, 3600) . ' h';
+            return SAMEHS_Text::t('%d h ago', intdiv($sec, 3600));
         }
-        return 'vor ' . intdiv($sec, 86400) . ' Tagen';
+        return SAMEHS_Text::t('%d days ago', intdiv($sec, 86400));
     }
 
     /**
@@ -218,7 +236,7 @@ class SamsungEhs extends IPSModule
             if ($id === 0) {
                 continue;
             }
-            $parts[] = $def['caption'] . ' ' . number_format((float)GetValue($id), 1, ',', '') . ' °C';
+            $parts[] = SAMEHS_Text::t($def['caption']) . ' ' . SAMEHS_Text::zahl((float)GetValue($id)) . ' °C';
         }
         return implode(', ', $parts);
     }
@@ -236,17 +254,17 @@ class SamsungEhs extends IPSModule
 
         if (!$active) {
             if (!$hasHost) {
-                return ['ℹ️ Noch nicht eingerichtet: keine IP-Adresse des RS485-Adapters eingetragen. Danach „SamsungEhs aktiv“ einschalten und übernehmen.', -1];
+                return [SAMEHS_Text::t('ℹ️ Not set up yet: no IP address of the RS485 adapter entered. Then switch "SamsungEhs active" on and apply.'), -1];
             }
-            return ['ℹ️ Ausgeschaltet -- „SamsungEhs aktiv“ einschalten und übernehmen, dann wird der NASA-Bus abgehört.', -1];
+            return [SAMEHS_Text::t('ℹ️ Switched off -- switch "SamsungEhs active" on and apply, then the NASA bus is listened to.'), -1];
         }
         if (!$hasHost) {
-            return ['⛔ Pflichtangabe fehlt: die IP-Adresse des RS485-Adapters.', 0xFF0000];
+            return [SAMEHS_Text::t('⛔ Required entry missing: the IP address of the RS485 adapter.'), 0xFF0000];
         }
 
         $lastCycle = $this->ReadAttributeInteger('LastCycleAt');
         if ($lastCycle === 0) {
-            return ['ℹ️ Noch kein Hörfenster gelaufen -- das erste folgt innerhalb von ' . $interval . ' s nach dem Übernehmen.', -1];
+            return [SAMEHS_Text::t('ℹ️ No listening window has run yet -- the first follows within %d s after applying.', $interval), -1];
         }
 
         $lastSeen = $this->ReadAttributeInteger('LastSeenAt');
@@ -256,23 +274,25 @@ class SamsungEhs extends IPSModule
         $missing = array_filter(explode(',', $this->ReadAttributeString('LastMissing')));
 
         if ($busCount < 0) {
-            $text = '⚠️ Der RS485-Adapter ist nicht erreichbar (letzter Versuch ' . $this->ageText($lastCycle) . '; letzte Werte ' . ($lastSeen > 0 ? $this->ageText($lastSeen) : 'noch nie') . '). IP-Adresse und Port prüfen. Viele Adapter erlauben nur EINE TCP-Verbindung gleichzeitig -- hängt schon eine andere Anwendung (z. B. Home Assistant) daran?';
+            $text = SAMEHS_Text::t('⚠️ The RS485 adapter is not reachable (last attempt %s; last values %s). Check IP address and port. Many adapters allow only ONE TCP connection at a time -- is another application (e.g. Home Assistant) already connected to it?', $this->ageText($lastCycle), $lastSeen > 0 ? $this->ageText($lastSeen) : SAMEHS_Text::t('never'));
             if ($values !== '') {
-                $text .= ' Letzte bekannte Werte: ' . $values . '.';
+                $text .= ' ' . SAMEHS_Text::t('Last known values: %s.', $values);
             }
             return [$text, -1];
         }
         if (count($missing) === $knownCount) {
-            return ['⚠️ Adapter erreicht, aber im Hörfenster (' . $listen . ' s) kam keine der ' . $knownCount . ' bekannten NASA-Nachrichten vorbei (' . $busCount . ' andere Nachricht' . ($busCount === 1 ? '' : 'en') . ' gesehen, ' . $this->ageText($lastCycle) . '). Hörfenster verlängern und den Anschluss an F1/F2 prüfen.', -1];
+            return [$busCount === 1
+                ? SAMEHS_Text::t('⚠️ Adapter reached, but none of the %d known NASA messages passed by in the listening window (%d s) (1 other message seen, %s). Extend the listening window and check the connection at F1/F2.', $knownCount, $listen, $this->ageText($lastCycle))
+                : SAMEHS_Text::t('⚠️ Adapter reached, but none of the %d known NASA messages passed by in the listening window (%d s) (%d other messages seen, %s). Extend the listening window and check the connection at F1/F2.', $knownCount, $listen, $busCount, $this->ageText($lastCycle)), -1];
         }
         if (time() - $lastCycle > 3 * $interval + $listen + 10) {
-            return ['⚠️ Das letzte Hörfenster liegt ' . str_replace('vor ', '', $this->ageText($lastCycle)) . ' zurück, erwartet wären ' . $interval . ' s -- Timer und Instanzstatus prüfen. Letzte Werte: ' . $values . '.', -1];
+            return [SAMEHS_Text::t('⚠️ The last listening window was %s, one is expected every %d s -- check the timer and the instance status. Last values: %s.', $this->ageText($lastCycle), $interval, $values), -1];
         }
         if (count($missing) > 0) {
             $names = array_map(fn($ident) => $this->captionOf($ident), $missing);
-            return ['⚠️ Bus liefert, aber ' . count($names) . ' von ' . $knownCount . ' Werten kamen im letzten Hörfenster (' . $listen . ' s) nicht vorbei: ' . implode(', ', $names) . ' -- sie bleiben auf dem letzten Stand, ein längeres Hörfenster kann helfen. Gesehen ' . $this->ageText($lastCycle) . ': ' . $values . '.', -1];
+            return [SAMEHS_Text::t('⚠️ The bus delivers, but %d of %d values did not pass by in the last listening window (%d s): %s -- they stay at their last state, a longer listening window can help. Seen %s: %s.', count($names), $knownCount, $listen, implode(', ', $names), $this->ageText($lastCycle), $values), -1];
         }
-        return ['✅ NASA-Bus wird abgehört, alle ' . $knownCount . ' Werte im Hörfenster gesehen (' . $this->ageText($lastCycle) . '): ' . $values . '.', -1];
+        return [SAMEHS_Text::t('✅ NASA bus is being listened to, all %d values seen in the listening window (%s): %s.', $knownCount, $this->ageText($lastCycle), $values), -1];
     }
 
     private function updateFormElement(array &$items, string $name, array $patch): bool
@@ -315,15 +335,15 @@ class SamsungEhs extends IPSModule
         $multi = count($pending) > 1;
         foreach ($pending as $ver => $lines) {
             if ($multi) {
-                $items[] = ['type' => 'Label', 'caption' => 'Version ' . $ver . ':'];
+                $items[] = ['type' => 'Label', 'caption' => SAMEHS_Text::t('Version %s:', $ver)];
             }
             foreach ($lines as $line) {
-                $items[] = ['type' => 'Label', 'caption' => '• ' . $line];
+                $items[] = ['type' => 'Label', 'caption' => '• ' . SAMEHS_Text::t($line)];
             }
         }
-        $items[] = ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckNews($id);'];
+        $items[] = ['type' => 'Button', 'caption' => SAMEHS_Text::t('Understood – do not show again'), 'onClick' => 'SAMEHS_AckNews($id);'];
         $latest = array_key_last($pending);
-        return ['type' => 'ExpansionPanel', 'name' => 'NewsPanel', 'caption' => '🆕 Neu bis Version ' . $latest, 'expanded' => true, 'items' => $items];
+        return ['type' => 'ExpansionPanel', 'name' => 'NewsPanel', 'caption' => SAMEHS_Text::t('🆕 New up to version %s', $latest), 'expanded' => true, 'items' => $items];
     }
 
     public function AckNews(): void
@@ -346,11 +366,11 @@ class SamsungEhs extends IPSModule
             'type'     => 'ExpansionPanel',
             'name'     => 'PurposeIntroPanel',
             'expanded' => true,
-            'caption'  => '👋  Wozu dieses Modul?',
+            'caption'  => SAMEHS_Text::t('👋  What is this module for?'),
             'items'    => [
-                ['type' => 'Label', 'caption' => 'SamsungEhs liest eine Samsung-EHS-Wärmepumpe direkt über den internen NASA-Bus (RS485, F1/F2-Anschluss) aus -- ohne Internet, ohne Herstellerkonto und ohne Samsungs offizielles Modbus-Zubehörmodul (MIM-B19N). Dafür reicht ein einfacher RS485-zu-Ethernet-Adapter.'],
-                ['type' => 'Label', 'caption' => 'Bewusst nur lesend und Stand heute ungeprüft an echter Hardware -- die Nachrichtennummern stammen aus einer aktiv gepflegten Community-Referenz, Paketformat und Prüfsumme wurden aber gegen eine unabhängige Referenz-Implementierung verifiziert.'],
-                ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckPurposeIntro($id);'],
+                ['type' => 'Label', 'caption' => SAMEHS_Text::t('SamsungEhs reads a Samsung EHS heat pump directly via the internal NASA bus (RS485, F1/F2 connection) -- without internet, without a manufacturer account and without Samsung\'s official Modbus accessory module (MIM-B19N). A simple RS485-to-Ethernet adapter is enough.')],
+                ['type' => 'Label', 'caption' => SAMEHS_Text::t('Read-only by design. The message numbers come from an actively maintained community reference and were confirmed on real systems by testers; packet format and checksum were verified against an independent reference implementation.')],
+                ['type' => 'Button', 'caption' => SAMEHS_Text::t('Understood – do not show again'), 'onClick' => 'SAMEHS_AckPurposeIntro($id);'],
             ],
         ];
     }
@@ -378,11 +398,11 @@ class SamsungEhs extends IPSModule
             'type'     => 'ExpansionPanel',
             'name'     => 'ForumHintPanel',
             'expanded' => true,
-            'caption'  => '💬  Feedback im Symcon-Forum',
+            'caption'  => SAMEHS_Text::t('💬  Feedback in the Symcon forum'),
             'items'    => [
-                ['type' => 'Label', 'caption' => 'Fragen, Fehler oder Erfahrungsberichte -- dafür gibt es den SamsungEhs-Forumsthread.'],
-                ['type' => 'Button', 'caption' => 'Zum Forums-Thread', 'onClick' => "echo '" . self::FORUM_THREAD_URL . "';", 'link' => true],
-                ['type' => 'Button', 'caption' => 'Verstanden – nicht mehr anzeigen', 'onClick' => 'SAMEHS_AckForumHint($id);'],
+                ['type' => 'Label', 'caption' => SAMEHS_Text::t('Questions, bugs or experience reports -- the SamsungEhs forum thread is the place for that.')],
+                ['type' => 'Button', 'caption' => SAMEHS_Text::t('To the forum thread'), 'onClick' => "echo '" . self::FORUM_THREAD_URL . "';", 'link' => true],
+                ['type' => 'Button', 'caption' => SAMEHS_Text::t('Understood – do not show again'), 'onClick' => 'SAMEHS_AckForumHint($id);'],
             ],
         ];
     }
@@ -393,10 +413,8 @@ class SamsungEhs extends IPSModule
         $this->UpdateFormField('ForumHintPanel', 'visible', false);
     }
 
-    // Zeigt auf beta (erster Store-Release-Branch, siehe SUITE.md-Stolperfalle
-    // 01.09.2026: nicht blind auf main verlinken -- main existiert fuer dieses
-    // Repo noch nicht). Aktive Entwicklung bleibt auf ems-integration.
-    private const LICENSE_URL = 'https://github.com/DG65/NRGSamsungEhs/blob/beta/LICENSE';
+    // Seit 27.10.2026 ist main der Release-Branch (beta ist identisch, ems-integration abgeschafft).
+    private const LICENSE_URL = 'https://github.com/DG65/NRGSamsungEhs/blob/main/LICENSE';
     private const PAYPAL_URL = 'https://paypal.me/DietmarGureth';
 
     private function LicenseHint(): array
@@ -404,14 +422,14 @@ class SamsungEhs extends IPSModule
         return [
             'type'     => 'ExpansionPanel',
             'expanded' => false,
-            'caption'  => '🧡  Über dieses Modul',
+            'caption'  => SAMEHS_Text::t('🧡  About this module'),
             'items'    => [
-                ['type' => 'Label', 'caption' => 'Entstanden aus echter Begeisterung für die eigene Anlage — und ein paar durchgetippten Abenden. Trotzdem: Software-Hobby hin oder her, das hier ist geistiges Eigentum und echte Arbeit steckt drin.'],
-                ['type' => 'Label', 'caption' => 'Lizenz: PolyForm Noncommercial 1.0.0 — privat und nicht-kommerziell frei nutzbar, für den gewerblichen Einsatz braucht es eine gesonderte Lizenz vom Rechteinhaber.'],
-                ['type' => 'Button', 'caption' => 'Lizenztext ansehen', 'onClick' => "echo '" . self::LICENSE_URL . "';", 'link' => true],
-                ['type' => 'Label', 'caption' => 'Gewerbliche Nutzung oder Fragen zur Lizenz? Einfach melden: dietmar@gureth.eu'],
-                ['type' => 'Label', 'caption' => 'Gefällt dir das Modul und du möchtest trotzdem etwas dalassen? Über eine kleine Spende freue ich mich — völlig freiwillig, keine Gegenleistung nötig.'],
-                ['type' => 'Button', 'caption' => '☕  Spenden via PayPal', 'onClick' => "echo '" . self::PAYPAL_URL . "';", 'link' => true],
+                ['type' => 'Label', 'caption' => SAMEHS_Text::t('Born out of genuine enthusiasm for my own installation — and a few evenings of typing. Still: hobby software or not, this is intellectual property and real work went into it.')],
+                ['type' => 'Label', 'caption' => SAMEHS_Text::t('License: PolyForm Noncommercial 1.0.0 — free for private and non-commercial use; commercial use needs a separate license from the rights holder.')],
+                ['type' => 'Button', 'caption' => SAMEHS_Text::t('View license text'), 'onClick' => "echo '" . self::LICENSE_URL . "';", 'link' => true],
+                ['type' => 'Label', 'caption' => SAMEHS_Text::t('Commercial use or questions about the license? Just get in touch: dietmar@gureth.eu')],
+                ['type' => 'Label', 'caption' => SAMEHS_Text::t('Do you like the module and still want to leave something? I would be happy about a small donation — completely voluntary, nothing owed in return.')],
+                ['type' => 'Button', 'caption' => SAMEHS_Text::t('☕  Donate via PayPal'), 'onClick' => "echo '" . self::PAYPAL_URL . "';", 'link' => true],
             ],
         ];
     }
@@ -434,7 +452,7 @@ class SamsungEhs extends IPSModule
         if ($raw === null) {
             $this->maintainDeviceVariables([], false);
             $this->SetStatus(201);
-            $this->LogMessage('NASA-Bruecke nicht erreichbar (' . $host . ':' . $this->ReadPropertyInteger('Port') . '): ' . $client->lastError, KL_WARNING);
+            $this->LogMessage(SAMEHS_Text::t('NASA bridge not reachable (%s:%d): %s', $host, $this->ReadPropertyInteger('Port'), $client->lastError), KL_WARNING);
             return;
         }
 
@@ -445,7 +463,7 @@ class SamsungEhs extends IPSModule
         // wurde (Bus traegt es seltener als die staendig gesendeten Messwerte),
         // und liefert Rohdaten fuer kuenftige MESSAGES-Ergaenzungen.
         $this->SendDebug(
-            'NASA-Nachrichten im Hörfenster',
+            SAMEHS_Text::t('NASA messages in the listening window'),
             implode(', ', array_map(fn($k, $v) => sprintf('0x%04X=%d', $k, $v), array_keys($raw), $raw)),
             0
         );
@@ -464,14 +482,14 @@ class SamsungEhs extends IPSModule
 
         $this->SetStatus($reachable ? 102 : 201);
         if (!$reachable) {
-            $this->LogMessage('In ' . $seconds . 's Hörfenster keine bekannte NASA-Nachricht auf dem Bus gesehen (' . $host . ':' . $this->ReadPropertyInteger('Port') . ').', KL_WARNING);
+            $this->LogMessage(SAMEHS_Text::t('No known NASA message seen on the bus within the %d s listening window (%s:%d).', $seconds, $host, $this->ReadPropertyInteger('Port')), KL_WARNING);
         }
     }
 
     private function maintainDeviceVariables(array $values, bool $reachable): void
     {
         $pos = 0;
-        $this->MaintainVariable('Erreichbar', 'Erreichbar', VARIABLETYPE_BOOLEAN, '~Alert.Reversed', $pos++, true);
+        $this->MaintainVariable('Erreichbar', SAMEHS_Text::t('Reachable'), VARIABLETYPE_BOOLEAN, '~Alert.Reversed', $pos++, true);
         $this->SetValue('Erreichbar', $reachable);
 
         foreach (self::MESSAGES as $def) {
@@ -479,7 +497,7 @@ class SamsungEhs extends IPSModule
             if (!array_key_exists($ident, $values)) {
                 continue;
             }
-            $this->MaintainVariable($ident, $def['caption'], VARIABLETYPE_FLOAT, 'NRG.Celsius', $pos++, true);
+            $this->MaintainVariable($ident, SAMEHS_Text::t($def['caption']), VARIABLETYPE_FLOAT, 'NRG.Celsius', $pos++, true);
             $this->SetValue($ident, (float)$values[$ident]);
         }
     }
@@ -496,7 +514,7 @@ class SamsungEhs extends IPSModule
         try {
             $archiveIDs = @IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}');
             if (!is_array($archiveIDs) || count($archiveIDs) === 0) {
-                return '❌ Keine Archiv-Instanz gefunden -- das Logging kann nicht eingeschaltet werden.';
+                return SAMEHS_Text::t('❌ No archive instance found -- logging cannot be enabled.');
             }
             $archiveID = (int)$archiveIDs[0];
             $new = 0;
@@ -516,11 +534,13 @@ class SamsungEhs extends IPSModule
                 IPS_ApplyChanges($archiveID);
             }
             if ($new === 0 && $already === 0) {
-                return 'ℹ️ Noch keine Messwerte vorhanden -- erst einen Abruf abwarten und dann erneut klicken.';
+                return SAMEHS_Text::t('ℹ️ No measured values yet -- wait for a poll first, then click again.');
             }
-            return '✅ Logging eingeschaltet für ' . $new . ' Messwert(e)' . ($already > 0 ? ' (' . $already . ' waren schon eingeschaltet)' : '') . '.';
+            return $already > 0
+                ? SAMEHS_Text::t('✅ Logging enabled for %d measured value(s) (%d were already enabled).', $new, $already)
+                : SAMEHS_Text::t('✅ Logging enabled for %d measured value(s).', $new);
         } catch (\Throwable $e) {
-            return '❌ Logging konnte nicht eingeschaltet werden: ' . $e->getMessage();
+            return SAMEHS_Text::t('❌ Logging could not be enabled: %s', $e->getMessage());
         }
     }
 

@@ -26,6 +26,8 @@
 // Globaler Klassenname bewusst mit SAMEHS_-Praefix (Verbund-Konvention
 // 25.07.2026).
 
+require_once __DIR__ . '/SAMEHS_Text.php';
+
 class SAMEHS_NasaBridgeClient
 {
     const PACKET_START = 0x32;
@@ -53,7 +55,7 @@ class SAMEHS_NasaBridgeClient
         $this->lastError = '';
         $sock = @fsockopen($this->host, $this->port, $errno, $errstr, 3.0);
         if ($sock === false) {
-            $this->lastError = 'connect: ' . $errstr;
+            $this->lastError = SAMEHS_Text::t('connect: %s', $errstr);
             return null;
         }
         stream_set_blocking($sock, false);

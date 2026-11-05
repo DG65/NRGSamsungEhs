@@ -2,56 +2,56 @@
     "elements": [
         {
             "type": "ExpansionPanel",
-            "caption": "📖 Dokumentation & Hilfe",
+            "caption": "📖 Documentation & help",
             "expanded": false,
             "items": [
                 {
                     "type": "Label",
                     "name": "VersionInfo",
-                    "caption": "ℹ️ SamsungEhs Version -- lokale NASA-Protokoll-Anbindung für Samsung-EHS-Wärmepumpen."
+                    "caption": ""
                 },
                 {
                     "type": "Label",
-                    "caption": "Hört auf den internen Samsung-NASA-Bus (RS485, F1/F2-Anschluss) mit und liest die dort ohnehin laufenden Statuswerte aus -- ohne Internet, ohne Konto, ohne Samsungs offizielles Modbus-Zubehörmodul MIM-B19N. Details: https://github.com/DG65/NRGSamsungEhs"
+                    "caption": "Listens in on the internal Samsung NASA bus (RS485, F1/F2 connection) and reads the status values that are exchanged there anyway -- without internet, without an account, without Samsung's official Modbus accessory module MIM-B19N. Details: https://github.com/DG65/NRGSamsungEhs"
                 },
                 {
                     "type": "Label",
-                    "caption": "Ablauf: 1. RS485-zu-Ethernet-Adapter am F1/F2-Anschluss der Wärmepumpe anschließen (siehe Hilfe unten) → 2. dessen IP-Adresse und Port eintragen → 3. Übernehmen → 4. „SamsungEhs aktiv“ einschalten und erneut übernehmen."
+                    "caption": "Steps: 1. Connect an RS485-to-Ethernet adapter to the F1/F2 connection of the heat pump (see help below) → 2. Enter its IP address and port → 3. Apply → 4. Switch on \"SamsungEhs active\" and apply again."
                 },
                 {
                     "type": "Button",
-                    "caption": "🔄 Übernehmen erzwingen (ohne Formularänderung)",
-                    "confirm": "Wirklich ApplyChanges() erzwingen? Praktisch direkt nach einem Modul-Update über die Modulverwaltung.",
-                    "onClick": "IPS_ApplyChanges($id); echo '✅ ApplyChanges() ausgeführt.';"
+                    "caption": "🔄 Force apply (without a form change)",
+                    "confirm": "Really force ApplyChanges()? Handy right after a module update via the module control.",
+                    "onClick": "IPS_ApplyChanges($id); echo '✅ ApplyChanges()';"
                 }
             ]
         },
         {
             "type": "ExpansionPanel",
             "name": "GeneralPanel",
-            "caption": "🔧 Allgemein",
+            "caption": "🔧 General",
             "expanded": true,
             "items": [
                 {
                     "type": "CheckBox",
                     "name": "SAMEHS_Active",
-                    "caption": "SamsungEhs aktiv"
+                    "caption": "SamsungEhs active"
                 },
                 {
                     "type": "NumberSpinner",
                     "name": "SAMEHS_Interval",
-                    "caption": "Aktualisierungsintervall (Sekunden)",
+                    "caption": "Update interval (seconds)",
                     "minimum": 30,
                     "maximum": 600,
                     "suffix": " s"
                 },
                 {
                     "type": "Label",
-                    "caption": "📈 Archivierung: Das Modul schaltet das Logging im Symcon-Archiv nie von selbst ein. Mit dem Knopf unten aktivierst du es bewusst für alle Messwerte (Fließkomma-Variablen) dieser Instanz, z. B. für Diagramme und Auswertungen. Bereits eingeschaltetes Logging bleibt unangetastet."
+                    "caption": "📈 Archiving: the module never switches on logging in the Symcon archive by itself. With the button below you deliberately enable it for all measured values (floating-point variables) of this instance, e.g. for charts and evaluations. Logging that is already enabled stays untouched."
                 },
                 {
                     "type": "Button",
-                    "caption": "📈 Logging für die Messwerte einschalten",
+                    "caption": "📈 Enable logging for the measured values",
                     "onClick": "echo SAMEHS_EnableArchiving($id);"
                 }
             ]
@@ -59,7 +59,7 @@
         {
             "type": "ExpansionPanel",
             "name": "ConnectionPanel",
-            "caption": "🔌 NASA-Bus-Zugang (RS485-Adapter)",
+            "caption": "🔌 NASA bus access (RS485 adapter)",
             "expanded": true,
             "items": [
                 {
@@ -73,18 +73,18 @@
                         {
                             "type": "ValidationTextBox",
                             "name": "Host",
-                            "caption": "IP-Adresse des RS485-Adapters"
+                            "caption": "IP address of the RS485 adapter"
                         },
                         {
                             "type": "PopupButton",
-                            "caption": "Welchen Adapter brauche ich und wie schließe ich ihn an?",
+                            "caption": "Which adapter do I need and how do I connect it?",
                             "width": "460px",
                             "popup": {
-                                "caption": "Welchen Adapter brauche ich und wie schließe ich ihn an?",
+                                "caption": "Which adapter do I need and how do I connect it?",
                                 "items": [
                                     {
                                         "type": "Label",
-                                        "caption": "Ein einfacher RS485-zu-Ethernet-Adapter (z. B. ein Waveshare-Modul oder ein Elfin EW11) genügt -- angeschlossen an den F1/F2-Anschluss der Wärmepumpe (der interne Bus zwischen Außen-/Innengerät). Kein Samsung-Originalzubehör nötig. Der Adapter muss den seriellen Datenstrom 1:1 über eine TCP-Verbindung durchreichen (\"transparent bridge\"/\"serial to TCP\"), nicht selbst irgendetwas übersetzen. IP-Adresse und Port sind dann die des Adapters, nicht der Wärmepumpe selbst."
+                                        "caption": "A simple RS485-to-Ethernet adapter (e.g. a Waveshare module or an Elfin EW11) is enough -- connected to the F1/F2 connection of the heat pump (the internal bus between outdoor and indoor unit). No original Samsung accessory is needed. The adapter has to pass the serial data stream through 1:1 over a TCP connection (\"transparent bridge\"/\"serial to TCP\") and must not translate anything itself. IP address and port are then those of the adapter, not of the heat pump itself."
                                     }
                                 ]
                             }
@@ -104,21 +104,21 @@
                         {
                             "type": "NumberSpinner",
                             "name": "ListenSeconds",
-                            "caption": "Hörfenster je Aktualisierung",
+                            "caption": "Listening window per update",
                             "minimum": 1,
                             "maximum": 60,
                             "suffix": " s"
                         },
                         {
                             "type": "PopupButton",
-                            "caption": "Warum ein Hörfenster statt einer direkten Abfrage?",
+                            "caption": "Why a listening window instead of a direct query?",
                             "width": "460px",
                             "popup": {
-                                "caption": "Warum ein Hörfenster statt einer direkten Abfrage?",
+                                "caption": "Why a listening window instead of a direct query?",
                                 "items": [
                                     {
                                         "type": "Label",
-                                        "caption": "Anders als Modbus fragt SamsungEhs keine einzelnen Werte gezielt ab -- Außen- und Innengerät tauschen auf dem NASA-Bus ohnehin laufend Statuswerte aus. Das Modul hört deshalb bei jedem Zyklus ein paar Sekunden mit und übernimmt, was in dieser Zeit vorbeikommt. Ein zu kurzes Fenster kann einzelne Werte verpassen (sie bleiben dann einfach auf dem letzten bekannten Stand). Werte über ca. 30s können bei manchen IP-Symcon-Installationen an der Skript-Ausführungszeit (Kernel-Einstellungen) scheitern -- betrifft dann nur den einzelnen Zyklus, kein Datenverlust. Ein Hörfenster nahe am Aktualisierungsintervall verlängert den tatsächlichen Zyklus entsprechend (das Modul wartet die Aufnahme immer ab, auch wenn der Timer eigentlich schon wieder fällig wäre)."
+                                        "caption": "Unlike Modbus, SamsungEhs does not query individual values -- the outdoor and indoor unit exchange status values on the NASA bus all the time anyway. The module therefore listens for a few seconds in every cycle and takes over what passes by in that time. A window that is too short can miss individual values (they then simply stay at their last known state). Values above about 30 s can fail on some Symcon installations because of the script execution time (kernel settings) -- this only affects the single cycle, no data is lost. A listening window close to the update interval lengthens the actual cycle accordingly (the module always waits for the recording to finish, even if the timer would be due again)."
                                     }
                                 ]
                             }
@@ -132,7 +132,7 @@
         {
             "code": 201,
             "icon": "error",
-            "caption": "NASA-Bus nicht erreichbar oder keine bekannte Nachricht gesehen -- IP-Adresse/Port des Adapters prüfen"
+            "caption": "NASA bus not reachable or no known message seen -- check IP address/port of the adapter"
         }
     ]
 }

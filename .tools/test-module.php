@@ -34,6 +34,7 @@ const KL_WARNING = 10205;
 const KL_NOTIFY  = 10204;
 
 $GLOBALS['ips'] = [
+    'locale'     => json_decode((string)file_get_contents(__DIR__ . '/../SamsungEhs/locale.json'), true)['translations']['de'],
     'profiles'   => [],
     'variables'  => [],
     'nextVarId'  => 10000,
@@ -120,8 +121,16 @@ class IPSModule
     protected $timers = [];
     public $status = 0;
 
-    public function __construct()
+    public function __construct($InstanceID = 12345)
     {
+    }
+    // Symcons Translate(): liest die locale.json des Moduls; hier die deutsche Tabelle (Standard im Pruefstand)
+    // oder nichts (Englisch, $GLOBALS['ips']['locale'] = []). Zaehlt die Aufrufe: jeder echte Aufruf
+    // kostet in Symcon ein Einlesen der locale.json (SUITE.md Stolperstein 24).
+    protected function Translate(string $text): string
+    {
+        $GLOBALS['ips']['translateCalls'] = ($GLOBALS['ips']['translateCalls'] ?? 0) + 1;
+        return ($GLOBALS['ips']['locale'] ?? [])[$text] ?? $text;
     }
     public function Create()
     {
@@ -328,7 +337,7 @@ function hexToBin(string $hex): string
 echo "Block 3: Lebenszyklus und Status\n";
 // ---------------------------------------------------------------------------
 
-$mod = new SamsungEhs();
+$mod = new SamsungEhs(12345);
 $mod->Create();
 check('SAMEHS_Active-Standard ist aus', $GLOBALS['ips']['properties']['SAMEHS_Active'] === false);
 check('Port-Standard ist 8899', $GLOBALS['ips']['properties']['Port'] === 8899);
@@ -460,11 +469,11 @@ check('Forum-Hinweis-Panel verschwindet nach Bestätigen', findFormElement($form
 // -- NEWS_VERSIONS-Banner (SUITE.md "Einheitliche Formular-Optik" Punkt 1,
 // Dashboard/Dietmar 23.09.2026, EMS-Weitergabe): siehe WPModbusHub-Prüfstand.
 $GLOBALS['ips']['libraryVersion'] = '';
-$newsMod = new SamsungEhs();
+$newsMod = new SamsungEhs(12345);
 $newsMod->Create();
 $formNews = json_decode($newsMod->GetConfigurationForm(), true);
 $newsPanel = findFormElement($formNews['elements'], 'NewsPanel');
-check('News-Banner erscheint bei leerem SeenNews', $newsPanel !== null && ($newsPanel['caption'] ?? '') === '🆕 Neu bis Version 0.3.1', json_encode($newsPanel['caption'] ?? null));
+check('News-Banner erscheint bei leerem SeenNews', $newsPanel !== null && ($newsPanel['caption'] ?? '') === '🆕 Neu bis Version ' . array_key_last(SamsungEhs::NEWS_VERSIONS), json_encode($newsPanel['caption'] ?? null));
 
 $GLOBALS['ips']['libraryVersion'] = '0.9.9-beta.3';
 $newsMod->AckNews();
@@ -475,7 +484,7 @@ $GLOBALS['ips']['libraryVersion'] = '';
 $formNewsGone = json_decode($newsMod->GetConfigurationForm(), true);
 check('News-Banner ist nach AckNews() weg (kein neuerer Eintrag)', findFormElement($formNewsGone['elements'], 'NewsPanel') === null);
 
-$oldNewsMod = new SamsungEhs();
+$oldNewsMod = new SamsungEhs(12345);
 $oldNewsMod->Create();
 $writeSeenNews = new ReflectionMethod(SamsungEhs::class, 'WriteAttributeString');
 $writeSeenNews->setAccessible(true);
@@ -588,7 +597,7 @@ $GLOBALS['ips']['properties']['SAMEHS_Active'] = false;
 $GLOBALS['ips']['properties']['Host'] = '';
 $GLOBALS['ips']['properties']['SAMEHS_Interval'] = 60;
 $GLOBALS['ips']['properties']['ListenSeconds'] = 3;
-$s2 = new SamsungEhs();
+$s2 = new SamsungEhs(12345);
 $s2->Create();
 
 [$line, $color] = statusOf($s2);
@@ -629,16 +638,202 @@ check('Adapter nicht erreichbar: letzte bekannte Werte bleiben sichtbar', strpos
 simulateWindow($s2, $all);
 setAttr($s2, 'LastCycleAt', time() - 1000);
 [$line] = statusOf($s2);
-check('Veraltet: ⚠️ meldet ein viel zu altes Hörfenster', strpos($line, '⚠️ Das letzte Hörfenster liegt') === 0 && strpos($line, 'zurück') !== false, $line);
+check('Veraltet: ⚠️ meldet ein viel zu altes Hörfenster', strpos($line, '⚠️ Das letzte Hörfenster war vor 16 min') === 0 && strpos($line, 'erwartet wird alle 60 s') !== false, $line);
 
 // Echter Update()-Lauf gegen eine nicht erreichbare Adresse (wie Block 5) landet in der Zeile.
-$s3 = new SamsungEhs();
+$s3 = new SamsungEhs(12345);
 $s3->Create();
 $GLOBALS['ips']['properties']['Host'] = '203.0.113.1';
 $GLOBALS['ips']['properties']['ListenSeconds'] = 1;
 $s3->Update();
 [$line] = statusOf($s3);
 check('Update() gegen nicht erreichbare Adresse: Zeile meldet den Adapter als nicht erreichbar', strpos($line, '⚠️ Der RS485-Adapter ist nicht erreichbar') === 0, $line);
+
+// ---------------------------------------------------------------------------
+echo "Block 10: Zweisprachigkeit (Deutsch/Englisch) und Translate()-Kosten\n";
+// ---------------------------------------------------------------------------
+
+$libLocale = (string)file_get_contents(__DIR__ . '/../SamsungEhs/locale.json');
+$deTable = json_decode($libLocale, true)['translations']['de'] ?? [];
+check('locale.json: gültig, deutsche Tabelle vorhanden', count($deTable) > 50);
+
+// Alle englischen Quelltexte einsammeln: t()-Aufrufe, NEWS, Nachrichten-Captions, form.json.
+$srcTexts = [];
+$litRe = "('(?:[^'\\\\]|\\\\.)*'|\"(?:[^\"\\\\]|\\\\.)*\")";
+$unq = function (string $lit): string {
+    return $lit[0] === "'" ? str_replace(["\\'", '\\\\'], ["'", '\\'], substr($lit, 1, -1)) : stripcslashes(substr($lit, 1, -1));
+};
+foreach ([__DIR__ . '/../SamsungEhs/module.php', __DIR__ . '/../SamsungEhs/libs/NasaBridgeClient.php'] as $file) {
+    $code = (string)file_get_contents($file);
+    preg_match_all('/SAMEHS_Text::t\(\s*' . $litRe . '/', $code, $mm);
+    foreach ($mm[1] as $lit) {
+        $srcTexts[$unq($lit)] = basename($file);
+    }
+}
+foreach (SamsungEhs::NEWS_VERSIONS as $lines) {
+    foreach ($lines as $line) {
+        $srcTexts[$line] = 'NEWS';
+    }
+}
+foreach (SamsungEhs::MESSAGES as $def) {
+    $srcTexts[$def['caption']] = 'MESSAGES';
+}
+$walkForm = function ($node, string $src) use (&$walkForm, &$srcTexts): void {
+    foreach ((array)$node as $k => $v) {
+        if (in_array($k, ['caption', 'confirm', 'label'], true) && is_string($v) && $v !== '') {
+            $srcTexts[$v] = $src;
+        } elseif (is_array($v)) {
+            $walkForm($v, $src);
+        }
+    }
+};
+$walkForm(json_decode((string)file_get_contents(__DIR__ . '/../SamsungEhs/form.json'), true), 'form.json');
+$srcTexts['.'] = 'Text::zahl';
+check('Quelltexte gefunden (t(), NEWS, Nachrichten, form.json)', count($srcTexts) > 50, (string)count($srcTexts));
+
+$fehlt = [];
+$platz = [];
+foreach ($srcTexts as $text => $quelle) {
+    if (!isset($deTable[$text])) {
+        $fehlt[] = $quelle . ': ' . $text;
+        continue;
+    }
+    $n1 = preg_match_all('/%(?:\d+\$)?[0-9]*[sdX]/', str_replace('%%', '', (string)$text));
+    $n2 = preg_match_all('/%(?:\d+\$)?[0-9]*[sdX]/', str_replace('%%', '', $deTable[$text]));
+    if ($n1 !== $n2) {
+        $platz[] = $text;
+    }
+}
+check('jeder Quelltext hat eine deutsche Fassung', $fehlt === [], implode(' | ', array_slice($fehlt, 0, 5)) . ' (' . count($fehlt) . ')');
+check('Platzhalter: englischer und deutscher Text haben gleich viele', $platz === [], implode(' | ', array_slice($platz, 0, 5)));
+$ueberzaehlig = array_diff(array_keys($deTable), array_keys($srcTexts));
+check('locale.json hat keine Einträge ohne Quelltext (verwaist)', $ueberzaehlig === [], implode(' | ', array_slice($ueberzaehlig, 0, 5)));
+$deutschImQuelltext = array_filter(array_keys($srcTexts), function ($t) {
+    return preg_match('/[äöüÄÖÜß]/u', $t) === 1;
+});
+check('englische Quelltexte enthalten keine Umlaute', $deutschImQuelltext === [], implode(' | ', array_map(function ($t) { return mb_substr($t, 0, 50); }, array_slice($deutschImQuelltext, 0, 3))));
+// Positionsplatzhalter (%2$d): gleiche Menge und Typen in beiden Sprachen
+check('Positionsplatzhalter der deutschen Texte zeigen auf vorhandene Argumente', (function () use ($deTable) {
+    foreach ($deTable as $en => $de) {
+        if (preg_match_all('/%(\d+)\$/', $de, $mm)) {
+            $n = preg_match_all('/%(?:\d+\$)?[0-9]*[sdX]/', str_replace('%%', '', $en));
+            if (max($mm[1]) > $n) {
+                return false;
+            }
+        }
+    }
+    return true;
+})());
+
+$captionsOf = function (array $node) use (&$captionsOf): array {
+    $out = [];
+    foreach ($node as $k => $v) {
+        if (in_array($k, ['caption', 'confirm', 'label'], true) && is_string($v)) {
+            $out[] = $v;
+        } elseif (is_array($v)) {
+            $out = array_merge($out, $captionsOf($v));
+        }
+    }
+    return $out;
+};
+$germanLeft = function (string $text): bool {
+    return preg_match('/[äöüÄÖÜß]|\b(und|nicht|oder|wird|Hörfenster|Wärme\w*|Verbindung|Schalter|aktiv|eingeschaltet|Fehler|antwortet|Hersteller)\b/u', $text) === 1;
+};
+$setUp = function (string $host = '192.168.1.60', bool $active = true) {
+    $GLOBALS['ips']['variables'] = [];
+    $GLOBALS['ips']['properties']['Host'] = $host;
+    $GLOBALS['ips']['properties']['SAMEHS_Active'] = $active;
+    $GLOBALS['ips']['properties']['SAMEHS_Interval'] = 60;
+    $GLOBALS['ips']['properties']['ListenSeconds'] = 3;
+};
+
+// --- Deutsch
+$GLOBALS['ips']['locale'] = $deTable;
+$setUp();
+$de = new SamsungEhs(12345);
+$de->Create();
+simulateWindow($de, $all);
+check('Deutsch: Variablenname "Außentemperatur", "Erreichbar", "Heizzone 1 Solltemperatur (Vorlauf-Soll)"', $GLOBALS['ips']['variables']['Aussentemperatur']['name'] === 'Außentemperatur' && $GLOBALS['ips']['variables']['Erreichbar']['name'] === 'Erreichbar'
+    && $GLOBALS['ips']['variables']['Zone1Soll']['name'] === 'Heizzone 1 Solltemperatur (Vorlauf-Soll)');
+$formDe = json_decode($de->GetConfigurationForm(), true);
+check('Deutsch: Formular zeigt "🔧 Allgemein", Knopf "Logging für die Messwerte einschalten", "Hörfenster je Aktualisierung"', strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '"🔧 Allgemein"') !== false && strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '📈 Logging für die Messwerte einschalten') !== false && strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), 'Hörfenster je Aktualisierung') !== false);
+check('Deutsch: "Neu"-Banner zeigt die deutsche Zeile zur neuesten Version', strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), 'durchgehend zweisprachig') !== false && strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '🆕 Neu bis Version ' . array_key_last(SamsungEhs::NEWS_VERSIONS)) !== false);
+check('Deutsch: Statuszeile mit Dezimalkomma', strpos(statusOf($de)[0], 'Außentemperatur 21,2 °C') !== false, statusOf($de)[0]);
+check('Deutsch: Status 201 im Formular deutsch', strpos(json_encode($formDe['status'], JSON_UNESCAPED_UNICODE), 'NASA-Bus nicht erreichbar') !== false);
+
+simulateWindow($de, $partial);
+check('Deutsch: die Liste der fehlenden Werte nennt deutsche Namen', strpos(statusOf($de)[0], 'nicht vorbei: Warmwasser Sollwert, Heizzone 1 Solltemperatur (Vorlauf-Soll) -- sie bleiben') !== false, statusOf($de)[0]);
+// Positionsplatzhalter: Reihenfolge der Argumente stimmt im Deutschen (Anzahl bekannter Nachrichten, Fenster, gesehene)
+simulateWindow($de, [0x1234 => 5]);
+check('Deutsch: "keine der 8 bekannten" und Hörfenster (3 s), eine andere Nachricht (Einzahl)', strpos(statusOf($de)[0], 'im Hörfenster (3 s) kam keine der 8 bekannten NASA-Nachrichten vorbei (1 andere Nachricht gesehen,') !== false, statusOf($de)[0]);
+simulateWindow($de, [0x1234 => 5, 0x2345 => 6]);
+check('Deutsch: Mehrzahl "2 andere Nachrichten" mit richtiger Reihenfolge', strpos(statusOf($de)[0], 'im Hörfenster (3 s) kam keine der 8 bekannten NASA-Nachrichten vorbei (2 andere Nachrichten gesehen,') !== false, statusOf($de)[0]);
+
+// --- Englisch: keine deutschen Reste
+$GLOBALS['ips']['locale'] = [];
+$setUp();
+$en = new SamsungEhs(12345);
+$en->Create();
+$formEn = json_decode($en->GetConfigurationForm(), true);
+$restEn = array_values(array_filter($captionsOf($formEn), $germanLeft));
+check('Englisch: Formular ohne deutsche Reste', $restEn === [], implode(' | ', array_map(function ($t) { return mb_substr($t, 0, 70); }, array_slice($restEn, 0, 4))));
+check('Englisch: Formular zeigt Abschnitte und Knöpfe englisch', strpos(json_encode($formEn, JSON_UNESCAPED_UNICODE), '"🔧 General"') !== false && strpos(json_encode($formEn), 'Enable logging for the measured values') !== false && strpos(json_encode($formEn), 'Listening window per update') !== false);
+check('Englisch: Status 201 im Formular englisch', strpos(json_encode($formEn['status']), 'NASA bus not reachable') !== false);
+check('Englisch: "Neu"-Banner mit englischen Zeilen', strpos(json_encode($formEn), 'The module is now fully bilingual') !== false && strpos(json_encode($formEn), 'New up to version') !== false);
+simulateWindow($en, $all);
+check('Englisch: Variablenname "Outdoor temperature", "Reachable"', $GLOBALS['ips']['variables']['Aussentemperatur']['name'] === 'Outdoor temperature' && $GLOBALS['ips']['variables']['Erreichbar']['name'] === 'Reachable');
+check('Englisch: Statuszeile ✅ mit Dezimalpunkt', strpos(statusOf($en)[0], '✅ NASA bus is being listened to, all 8 values') === 0 && strpos(statusOf($en)[0], 'Outdoor temperature 21.2 °C') !== false, statusOf($en)[0]);
+simulateWindow($en, $partial);
+check('Englisch: Teilausfall nennt fehlende Werte beim Namen', strpos(statusOf($en)[0], '⚠️ The bus delivers, but 2 of 8 values') === 0 && strpos(statusOf($en)[0], 'Hot water setpoint') !== false, statusOf($en)[0]);
+check('Englisch: die Liste der fehlenden Werte nennt englische Namen', strpos(statusOf($en)[0], 'did not pass by in the last listening window (3 s): Hot water setpoint, Heating zone 1 target temperature (flow setpoint) -- they stay') !== false, statusOf($en)[0]);
+simulateWindow($en, [0x1234 => 5]);
+check('Englisch: Einzahl "1 other message seen"', strpos(statusOf($en)[0], '(1 other message seen,') !== false, statusOf($en)[0]);
+simulateWindow($en, [0x1234 => 5, 0x2345 => 6]);
+check('Englisch: Mehrzahl "2 other messages seen"', strpos(statusOf($en)[0], '(2 other messages seen,') !== false, statusOf($en)[0]);
+simulateWindow($en, null);
+check('Englisch: Adapter nicht erreichbar mit Hinweis auf gleichzeitige TCP-Verbindungen, englisch', strpos(statusOf($en)[0], '⚠️ The RS485 adapter is not reachable') === 0 && strpos(statusOf($en)[0], 'ONE TCP connection') !== false && !$germanLeft(statusOf($en)[0]), statusOf($en)[0]);
+simulateWindow($en, $all);
+setAttr($en, 'LastCycleAt', time() - 1000);
+check('Englisch: veraltetes Hörfenster', strpos(statusOf($en)[0], '⚠️ The last listening window was 16 min ago') === 0, statusOf($en)[0]);
+$GLOBALS['ips']['properties']['SAMEHS_Active'] = false;
+check('Englisch: Statuszeile "Switched off"', strpos(statusOf($en)[0], 'ℹ️ Switched off') === 0, statusOf($en)[0]);
+$GLOBALS['ips']['properties']['SAMEHS_Active'] = true;
+$GLOBALS['ips']['properties']['Host'] = '';
+check('Englisch: Pflichtangabe fehlt', strpos(statusOf($en)[0], '⛔ Required entry missing') === 0, statusOf($en)[0]);
+$GLOBALS['ips']['properties']['Host'] = '192.168.1.60';
+check('Englisch: Archivierungs-Meldung englisch', !$germanLeft($en->EnableArchiving()), $en->EnableArchiving());
+$cl = new SAMEHS_NasaBridgeClient('203.0.113.1', 9);
+check('Englisch: Client-Fehlertext "connect: …" (echter Verbindungsversuch scheitert)', ($cl->listen(1.0) === null) && strpos($cl->lastError, 'connect: ') === 0, $cl->lastError);
+$GLOBALS['ips']['locale'] = $deTable;
+$cl2 = new SAMEHS_NasaBridgeClient('203.0.113.1', 9);
+SAMEHS_Text::setzen(SAMEHS_Text::mitMerkliste(function (string $t) use ($deTable): string { return $deTable[$t] ?? $t; }));
+$cl2->listen(1.0);
+check('Deutsch: Client-Fehlertext "Verbindung: …"', strpos($cl2->lastError, 'Verbindung: ') === 0, $cl2->lastError);
+
+// --- Kosten: Symcons Translate() liest bei jedem Aufruf die locale.json -- hoechstens einmal je Text und Prozess
+$GLOBALS['ips']['locale'] = $deTable;
+$setUp();
+$cost = new SamsungEhs(12345);
+$cost->Create();
+$GLOBALS['ips']['translateCalls'] = 0;
+$runCycle = function () use ($cost, $all) {
+    simulateWindow($cost, $all);
+    $cost->GetFunctions();
+    statusOf($cost);
+};
+$runCycle();
+$afterFirst = $GLOBALS['ips']['translateCalls'];
+for ($i = 0; $i < 20; $i++) {
+    $runCycle();
+}
+check('Translate-Kosten: Hörfenster, Vertragsabfrage und Formular fragen Symcon nur beim ersten Mal', $GLOBALS['ips']['translateCalls'] === $afterFirst && $afterFirst < count($srcTexts), "erste Runde $afterFirst Aufrufe, nach 21 Runden " . $GLOBALS['ips']['translateCalls']);
+$GLOBALS['ips']['translateCalls'] = 0;
+for ($i = 0; $i < 10; $i++) {
+    $cost->GetConfigurationForm();
+}
+check('Translate-Kosten: weitere zehn Formulare kosten keinen Aufruf', $GLOBALS['ips']['translateCalls'] === 0, (string)$GLOBALS['ips']['translateCalls']);
+SAMEHS_Text::setzen(SAMEHS_Text::mitMerkliste(function (string $t): string { throw new RuntimeException('Instanz weg'); }));
+check('Übersetzer wirft: Quelltext bleibt stehen, nichts bricht ab', SAMEHS_Text::t('Hot water') === 'Hot water');
 
 // ---------------------------------------------------------------------------
 echo "\n";

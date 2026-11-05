@@ -1,5 +1,13 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.4.0 (Build 10) — 05.11.2026
+
+- **Zweisprachig (Deutsch/Englisch).** Formular, Statusmeldungen, Hinweise, Log- und Debugtexte, Variablennamen neu angelegter Variablen und der Fehlertext des Adapter-Clients folgen jetzt der Symcon-Sprache. Quelltexte sind englisch (Code und `form.json`), die deutsche Fassung steht in `SamsungEhs/locale.json` (Symcon liest sie nur im Modulordner). Englische Dokumentation: `README.en.md`.
+- **Übersetzung ohne den Automat-Fehler** (SUITE.md Stolperstein 24): Symcons `Translate()` liest bei jedem Aufruf die `locale.json`. Deshalb fragt `SAMEHS_Text` jeden Text höchstens einmal je Prozess bei Symcon nach und merkt sich die Antwort; Hörfenster, Vertragsabfrage und Formular kosten danach keinen Symcon-Aufruf mehr. Wirft der Übersetzer (z. B. Instanz gelöscht), bleibt der englische Text stehen. Kein eigenes Lesen der `locale.json`.
+- Kennungen unverändert: Idents der Variablen, Properties, Attribute, Funktionen (`SAMEHS_…`) und der Vertrag mit WPHub/EMS/Dashboard. Bestehende Variablen und Einstellungen bleiben, neue Variablen werden in der Symcon-Sprache benannt.
+- Hinweistext „Wozu dieses Modul?“ korrigiert: stand noch auf „ungeprüft an echter Hardware“, obwohl die Nachrichten von Testern an echten Anlagen bestätigt sind. Lizenz-Link zeigt auf `main`.
+- Prüfstand: Block 10 prüft, dass jeder Quelltext eine deutsche Fassung hat, Platzhalter und Positionsplatzhalter übereinstimmen, keine verwaisten Einträge existieren, das englische Formular keine deutschen Reste zeigt, Dezimalkomma/-punkt stimmen und dass Hörfenster, Vertragsabfrage und Formular nach dem ersten Mal keinen `Translate()`-Aufruf mehr auslösen; zwölf Mutationen.
+
 ## 0.3.1 (Build 9) — 30.10.2026
 
 - **Symcon-Review: Logging nur noch auf ausdrücklichen Klick.** Das Modul hat bisher für seine Messwerte automatisch das Logging im Symcon-Archiv eingeschaltet, ohne den Nutzer zu fragen. Das ist entfernt. Im Bereich „Allgemein“ steht jetzt ein Hinweis und der Knopf „📈 Logging für die Messwerte einschalten“ (SAMEHS_EnableArchiving()). Er schaltet das Logging für alle Messwerte (Fließkomma-Variablen) dieser Instanz ein, nie etwas aus, und meldet, für wie viele Werte er es getan hat. Schon eingeschaltetes Logging bleibt bestehen.
