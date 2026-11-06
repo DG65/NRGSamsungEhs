@@ -71,23 +71,4 @@ final class SAMEHS_Text
     {
         return number_format($wert, 1, self::t('.'), '');
     }
-
-    /**
-     * Uebersetzt in einem Formular (form.json) alle Anzeigetexte: caption, confirm, label sowie die
-     * Beschriftungen in options/popup/items/status. Kommandos (onClick, onChange) und Namen bleiben.
-     */
-    public static function formular($knoten)
-    {
-        if (!is_array($knoten)) {
-            return $knoten;
-        }
-        foreach ($knoten as $schluessel => $wert) {
-            if (is_string($schluessel) && in_array($schluessel, ['caption', 'confirm', 'label'], true) && is_string($wert)) {
-                $knoten[$schluessel] = $wert === '' ? $wert : self::t($wert);
-            } elseif (is_array($wert)) {
-                $knoten[$schluessel] = self::formular($wert);
-            }
-        }
-        return $knoten;
-    }
 }

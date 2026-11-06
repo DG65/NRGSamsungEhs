@@ -1,5 +1,10 @@
 # Changelog — NRG-Stack SamsungEhs
 
+
+## 0.4.1 (Build 11) — 06.11.2026
+
+- **Store-Prüfung (Punkt 25): Formulartexte nicht mehr selbst übersetzt.** `SAMEHS_Text::formular()` entfällt; die Konsole übersetzt die statischen Texte der `form.json` aus `locale.json` selbst. Variablennamen, Meldungen, Statuszeilen mit eingesetzten Werten und dynamisch gebaute Abschnitte übersetzt das Modul weiter (mit Merkliste). Der Prüfstand sichert, dass jeder statische Formulartext in `locale.json` steht. Keine Änderung für Anwender.
+
 ## 0.4.0 (Build 10) — 05.11.2026
 
 - **Zweisprachig (Deutsch/Englisch).** Formular, Statusmeldungen, Hinweise, Log- und Debugtexte, Variablennamen neu angelegter Variablen und der Fehlertext des Adapter-Clients folgen jetzt der Symcon-Sprache. Quelltexte sind englisch (Code und `form.json`), die deutsche Fassung steht in `SamsungEhs/locale.json` (Symcon liest sie nur im Modulordner). Englische Dokumentation: `README.en.md`.

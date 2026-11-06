@@ -756,10 +756,25 @@ simulateWindow($de, $all);
 check('Deutsch: Variablenname "Außentemperatur", "Erreichbar", "Heizzone 1 Solltemperatur (Vorlauf-Soll)"', $GLOBALS['ips']['variables']['Aussentemperatur']['name'] === 'Außentemperatur' && $GLOBALS['ips']['variables']['Erreichbar']['name'] === 'Erreichbar'
     && $GLOBALS['ips']['variables']['Zone1Soll']['name'] === 'Heizzone 1 Solltemperatur (Vorlauf-Soll)');
 $formDe = json_decode($de->GetConfigurationForm(), true);
-check('Deutsch: Formular zeigt "🔧 Allgemein", Knopf "Logging für die Messwerte einschalten", "Hörfenster je Aktualisierung"', strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '"🔧 Allgemein"') !== false && strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '📈 Logging für die Messwerte einschalten') !== false && strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), 'Hörfenster je Aktualisierung') !== false);
+$staticTexts = function ($node) use (&$staticTexts): array {
+    $found = [];
+    if (is_array($node)) {
+        foreach ($node as $key => $value) {
+            if (is_string($key) && in_array($key, ['caption', 'confirm', 'label'], true) && is_string($value) && $value !== '') {
+                $found[] = $value;
+            } elseif (is_array($value)) {
+                $found = array_merge($found, $staticTexts($value));
+            }
+        }
+    }
+    return $found;
+};
+$localeDeStatic = json_decode((string)file_get_contents(__DIR__ . '/../SamsungEhs/locale.json'), true)['translations']['de'];
+$missingStatic = array_values(array_filter(array_unique($staticTexts(json_decode((string)file_get_contents(__DIR__ . '/../SamsungEhs/form.json'), true))), fn ($t) => !isset($localeDeStatic[$t])));
+check('Formular: jeder statische Text der form.json steht in locale.json (Symcon übersetzt ihn selbst, Store-Punkt 25)', $missingStatic === [], json_encode($missingStatic, JSON_UNESCAPED_UNICODE));
+check('Formular: statische Texte bleiben englischer Quelltext (keine eigene Übersetzung)', strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '🔧 General') !== false && strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '🔧 Allgemein') === false);
 check('Deutsch: "Neu"-Banner zeigt die deutsche Zeile zur neuesten Version', strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), 'durchgehend zweisprachig') !== false && strpos(json_encode($formDe, JSON_UNESCAPED_UNICODE), '🆕 Neu bis Version ' . array_key_last(SamsungEhs::NEWS_VERSIONS)) !== false);
 check('Deutsch: Statuszeile mit Dezimalkomma', strpos(statusOf($de)[0], 'Außentemperatur 21,2 °C') !== false, statusOf($de)[0]);
-check('Deutsch: Status 201 im Formular deutsch', strpos(json_encode($formDe['status'], JSON_UNESCAPED_UNICODE), 'NASA-Bus nicht erreichbar') !== false);
 
 simulateWindow($de, $partial);
 check('Deutsch: die Liste der fehlenden Werte nennt deutsche Namen', strpos(statusOf($de)[0], 'nicht vorbei: Warmwasser Sollwert, Heizzone 1 Solltemperatur (Vorlauf-Soll) -- sie bleiben') !== false, statusOf($de)[0]);
