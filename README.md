@@ -24,6 +24,10 @@ Vierter Baustein der Wärmepumpen-Vertikale im NRG-Stack:
 
 Anders als Modbus (Anfrage/Antwort auf einzelne Register) ist NASA ein eigenes Paketprotokoll auf einem gemeinsam genutzten Bus, auf dem Außen- und Innengerät ohnehin laufend Statuswerte austauschen. SamsungEhs fragt deshalb nichts aktiv ab, sondern hört je Aktualisierungszyklus ein paar Sekunden mit und übernimmt, was in dieser Zeit vorbeikommt (bewusst kein Dauer-Mitschnitt — passt besser zu Symcons Zyklusmodell).
 
+## Voraussetzung
+
+**Symcon 9.0 oder neuer.** Mit älteren Versionen (z. B. 8.1) zeigt der Module Store das Modul nicht an, die Suche meldet dann „Keine Module gefunden“. Erst auf Symcon 9.0 aktualisieren, dann im Store nach dem genauen Namen „NRG-Stack SamsungEhs“ suchen.
+
 ## Status
 
 Stand 0.4.0 (05.11.2026) — **bewusst nur lesend**. Drei getrennt zu bewertende Bausteine:

@@ -24,6 +24,10 @@ Fourth building block of the heat pump line in the NRG-Stack:
 
 Unlike Modbus (request/response on individual registers), NASA is a packet protocol of its own on a shared bus on which the outdoor and indoor unit exchange status values all the time anyway. SamsungEhs therefore queries nothing actively: in every update cycle it listens for a few seconds and takes over what passes by in that time (deliberately not a permanent recording — this fits Symcon's cycle model better).
 
+## Requirement
+
+**Symcon 9.0 or newer.** With older versions (e.g. 8.1) the Module Store does not show the module and the search reports “No modules found”. Update to Symcon 9.0 first, then search the store for the exact name “NRG-Stack SamsungEhs”.
+
 ## Status
 
 As of 0.4.0 (5 Nov 2026) — **read-only by design**. Three parts to be judged separately:
