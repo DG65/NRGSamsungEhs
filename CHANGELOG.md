@@ -1,5 +1,9 @@
 # Changelog — NRG-Stack SamsungEhs
 
+## 0.4.1 (Build 12) — 17.11.2026
+
+- Store-Metadaten: `date` in `library.json` auf den Release-Zeitpunkt gesetzt und `build` fortlaufend gezählt (Release-Regel, SUITE.md). Keine Code-Änderung; Beta und Stable liegen jetzt auf demselben Commit.
+
 
 ## 0.4.1 (Build 11) — 06.11.2026
 
