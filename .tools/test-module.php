@@ -373,7 +373,8 @@ check('Warmwasser-Variable NICHT angelegt (in diesem Zyklus nicht gesehen)', !is
 
 $functions = $mod->GetFunctions();
 check('GetFunctions() liefert genau einen Eintrag', is_array($functions) && count($functions) === 1);
-check('GetFunctions(): Type=heatpump, contractVersion 1.15', ($functions[0]['Type'] ?? '') === 'heatpump' && ($functions[0]['contractVersion'] ?? '') === '1.15');
+check('GetFunctions(): Type=heatpump, contractVersion 1.19', ($functions[0]['Type'] ?? '') === 'heatpump' && ($functions[0]['contractVersion'] ?? '') === '1.19');
+check('GetFunctions(): contractType = heatpump (1.19, Fremdanbindung), Alias Type bleibt', ($functions[0]['contractType'] ?? '') === 'heatpump' && ($functions[0]['Type'] ?? '') === 'heatpump');
 check('GetFunctions(): outsideTempID zeigt auf die echte Variable', ($functions[0]['outsideTempID'] ?? 0) === $GLOBALS['ips']['variables']['Aussentemperatur']['id']);
 check('GetFunctions(): mainInletTempID zeigt auf Ruecklauftemperatur', ($functions[0]['mainInletTempID'] ?? 0) === $GLOBALS['ips']['variables']['Ruecklauftemperatur']['id']);
 check('GetFunctions(): dhwTempID = 0 (Warmwasser in diesem Zyklus nicht gesehen)', ($functions[0]['dhwTempID'] ?? -1) === 0);

@@ -554,8 +554,10 @@ class SamsungEhs extends IPSModule
     {
         $reachableID = @$this->GetIDForIdent('Erreichbar');
         return [[
-            'contractVersion'      => '1.15',
+            'contractVersion'      => '1.19',
             'Type'                 => 'heatpump',
+            // 1.19 (Fremdanbindung, SUITE.md 20.11.2026): Selbstbeschreibung des Vertrags, Alias zu Type
+            'contractType'         => 'heatpump',
             'Caption'              => 'Samsung EHS',
             'PowerID'              => 0,
             'EnergyID'             => 0,
